@@ -88,3 +88,6 @@ outputs/*
 *.mp4
 *.mov
 *.avi
+
+# Claude Code skill symlinks (source lives in .agents/skills/)
+.claude/skills/
