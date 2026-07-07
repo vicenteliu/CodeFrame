@@ -1,0 +1,40 @@
+{
+  "name": "Demo Backyard Studio",
+  "location": "California, USA",
+  "project_type": "detached accessory structure concept",
+  "stories": 1,
+  "output_target": "outputs/demo-backyard-studio",
+  "units": "feet",
+  "site": {
+    "lot_width": 50,
+    "lot_depth": 120,
+    "front_setback": 20,
+    "side_setback": 5,
+    "rear_setback": 10
+  },
+  "building": {
+    "width": 20,
+    "depth": 24,
+    "height": 14,
+    "roof": {
+      "type": "gable",
+      "slope": "4:12"
+    }
+  },
+  "rooms": [
+    {
+      "name": "Studio",
+      "width": 20,
+      "depth": 18
+    },
+    {
+      "name": "Storage",
+      "width": 20,
+      "depth": 6
+    }
+  ],
+  "notes": [
+    "Demo input only; dimensions and setbacks are placeholders.",
+    "No code compliance or permit readiness is implied."
+  ]
+}

@@ -1,0 +1,90 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Virtual environments and local config
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+*.local
+
+# Local AI/agent tooling
+.agents/
+CLAUDE.md
+skills-lock.json
+
+# Editors and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Generated CodeFrame outputs
+outputs/*
+!outputs/.gitkeep
+
+# FreeCAD
+*.FCStd
+*.FCStd1
+*.FCBak
+*.step
+*.stp
+*.iges
+*.igs
+*.brep
+
+# Blender
+*.blend
+*.blend1
+*.blend2
+*.blend@
+*.bphys
+*.abc
+*.usd
+*.usda
+*.usdc
+
+# Generated CAD/model/render artifacts
+*.dxf
+*.dwg
+*.obj
+*.fbx
+*.glb
+*.gltf
+*.dae
+*.stl
+*.ply
+*.3ds
+*.svg
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.webp
+*.mp4
+*.mov
+*.avi
