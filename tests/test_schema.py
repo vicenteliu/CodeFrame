@@ -235,6 +235,15 @@ def test_egress_window_needs_5_7_sq_ft_gross(tmp_path):
     assert "5.7 sq ft" in message
 
 
+def test_detector_must_sit_inside_footprint(tmp_path):
+    message = error_from_mutated_demo(
+        tmp_path,
+        lambda data: data["detectors"][0]["at"].update(x=25),
+    )
+    assert "detectors[0]" in message
+    assert "outside" in message
+
+
 def test_interior_door_is_loaded():
     project = load_project_config(DEMO_CONFIG)
     door = project.interior_walls[0].doors[0]

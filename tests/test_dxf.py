@@ -283,6 +283,17 @@ def test_floor_plan_tags_openings_with_schedule_marks(demo_project, tmp_path):
     assert len(msp.query("CIRCLE[layer=='A-ANNO-TEXT']")) == 3
 
 
+def test_floor_plan_draws_detector_symbols(demo_project, tmp_path):
+    out_path = tmp_path / "floor_plan.dxf"
+    write_floor_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    circles = msp.query("CIRCLE[layer=='A-FIRE']")
+    assert len(circles) == 2
+    fire_texts = {text.dxf.text for text in msp.query("TEXT[layer=='A-FIRE']")}
+    assert fire_texts == {"S/CO", "S"}
+
+
 def test_unsupported_roof_type_raises_clear_error(tmp_path):
     import json
 

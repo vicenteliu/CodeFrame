@@ -156,6 +156,13 @@ class Room(_Model):
     area: PositiveFeet | None = None
 
 
+class Detector(_Model):
+    """A smoke / CO alarm at an explicit building-local point."""
+
+    type: Literal["smoke", "co", "combo"]
+    at: Point
+
+
 class ProjectConfig(_Model):
     schema_version: Literal[1]
     name: str
@@ -167,6 +174,7 @@ class ProjectConfig(_Model):
     interior_walls: list[InteriorWall] = []
     openings: list[Opening] = []
     rooms: list[Room] = []
+    detectors: list[Detector] = []
     notes: list[str] = []
 
 
@@ -309,6 +317,14 @@ def _geometry_errors(project: ProjectConfig) -> list[str]:
             errors.append(
                 f"rooms[{index}]: label for '{room.name}' at ({room.label_at.x}, "
                 f"{room.label_at.y}) is outside the {footprint.width} x "
+                f"{footprint.depth} ft footprint"
+            )
+
+    for index, detector in enumerate(project.detectors):
+        if detector.at.x > footprint.width or detector.at.y > footprint.depth:
+            errors.append(
+                f"detectors[{index}]: {detector.type} alarm at ({detector.at.x}, "
+                f"{detector.at.y}) is outside the {footprint.width} x "
                 f"{footprint.depth} ft footprint"
             )
 

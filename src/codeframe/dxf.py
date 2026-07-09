@@ -44,9 +44,12 @@ FLOOR_LAYERS = {
     "A-WALL-INTR": {"color": 7, "lineweight": 35},
     "A-DOOR": {"color": 4, "lineweight": 25},
     "A-GLAZ": {"color": 4, "lineweight": 25},
+    "A-FIRE": {"color": 1, "lineweight": 25},
     "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
     "A-ANNO-DIMS": {"color": 3, "lineweight": 13},
 }
+
+DETECTOR_LABELS = {"smoke": "S", "co": "CO", "combo": "S/CO"}
 
 ELEVATION_LAYERS = {
     "A-ELEV": {"color": 7, "lineweight": 35},
@@ -468,6 +471,14 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                 msp, "A-ANNO-TEXT", f"{room.area:g} SF",
                 (room.label_at.x, room.label_at.y - 1.0),
             )
+
+    for detector in project.detectors:
+        at = (detector.at.x, detector.at.y)
+        msp.add_circle(center=at, radius=0.75, dxfattribs={"layer": "A-FIRE"})
+        msp.add_text(
+            DETECTOR_LABELS[detector.type],
+            dxfattribs={"layer": "A-FIRE", "height": TEXT_HEIGHT},
+        ).set_placement(at, align=TextEntityAlignment.MIDDLE_CENTER)
 
     # Opening location chains: corner -> jamb -> jamb -> corner along each
     # exterior wall that has openings, one dimension row outside the face.

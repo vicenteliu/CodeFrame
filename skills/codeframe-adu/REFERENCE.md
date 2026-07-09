@@ -112,6 +112,14 @@ and the core rejects geometry that can never satisfy CRC R310 (sill over
 5.7 sq ft). Net clear opening depends on the window type — the Drafter
 still verifies it.
 
+## Detectors
+
+`detectors` is a top-level list of smoke/CO alarms at explicit
+building-local points: `{"type": "smoke" | "co" | "combo", "at": {x, y}}`.
+Placement is the Drafter's decision (CRC R314/R315: sleeping rooms,
+outside sleeping areas, each story) — CodeFrame draws the symbol (circle
+with S / CO / S/CO) exactly where the config puts it, nothing more.
+
 ## Room areas
 
 `rooms[].area` (square feet) is optional and STATED, never computed —
