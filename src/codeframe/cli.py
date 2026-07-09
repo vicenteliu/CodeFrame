@@ -12,6 +12,7 @@ from .dxf import (
     write_elevation,
     write_floor_plan,
     write_roof_plan,
+    write_schedules,
     write_site_plan,
 )
 from .massing import MassingExportError, freecadcmd_available, write_massing_model
@@ -106,6 +107,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             for wall in ("front", "rear", "left", "right")
         ],
+        ("schedules.dxf", write_schedules),
         ("drawing_set.pdf", write_sheet_set),
     ]
     if freecadcmd_available():

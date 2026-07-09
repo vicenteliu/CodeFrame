@@ -70,6 +70,17 @@ the lower-offset or higher-offset end of the opening).
 | `out-left` | lower-offset end         | outward        |
 | `out-right`| higher-offset end        | outward        |
 
+## Interior doors
+
+Interior walls take a `doors` list. `at` is the near jamb's position along
+the wall's axis, in the same building-local coordinate as the wall's
+`from`/`to` (NOT distance from the wall's start). Doors need `width`,
+`height`, and `swing`. Swing reuses the exterior vocabulary with this
+mapping: `left`/`right` = hinge at the lower/higher-coordinate jamb;
+`in` opens toward the positive side of the cross axis (+y for an axis-x
+wall, +x for an axis-y wall), `out` toward the negative side. Windows on
+interior walls are not supported.
+
 ## Roof
 
 Gable only in v1. `slope` is `"N:12"` (e.g. `"4:12"`). `ridge_axis` is the

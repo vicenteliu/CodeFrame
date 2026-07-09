@@ -19,7 +19,8 @@
     "roof": { "type": "gable", "slope": "4:12", "ridge_axis": "y", "overhang": 1 }
   },
   "interior_walls": [
-    { "axis": "x", "offset": 18, "from": 0, "to": 20, "thickness": 0.375 }
+    { "axis": "x", "offset": 18, "from": 0, "to": 20, "thickness": 0.375,
+      "doors": [ { "at": 3, "width": 2.5, "height": 6.67, "swing": "in-left" } ] }
   ],
   "openings": [
     { "type": "door", "wall": "front", "offset": 8.5, "width": 3, "height": 6.67, "swing": "in-left" },

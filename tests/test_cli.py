@@ -48,6 +48,7 @@ EXPECTED_OUTPUTS = (
     "elevation_rear.dxf",
     "elevation_left.dxf",
     "elevation_right.dxf",
+    "schedules.dxf",
     "drawing_set.pdf",
 )
 

@@ -207,3 +207,27 @@ def test_file_that_is_not_json_reports_json_error(tmp_path):
     with pytest.raises(ProjectConfigError) as exc_info:
         load_project_config(config_path)
     assert "JSON" in str(exc_info.value)
+
+
+def test_interior_door_is_loaded():
+    project = load_project_config(DEMO_CONFIG)
+    door = project.interior_walls[0].doors[0]
+    assert (door.at, door.width, door.swing) == (3, 2.5, "in-left")
+
+
+def test_interior_door_must_fit_its_wall(tmp_path):
+    message = error_from_mutated_demo(
+        tmp_path,
+        lambda data: data["interior_walls"][0]["doors"][0].update(at=18.5),
+    )
+    assert "interior_walls[0].doors[0]" in message
+    assert "18.5" in message
+
+
+def test_interior_door_must_fit_under_wall_height(tmp_path):
+    message = error_from_mutated_demo(
+        tmp_path,
+        lambda data: data["interior_walls"][0]["doors"][0].update(height=9.5),
+    )
+    assert "interior_walls[0].doors[0]" in message
+    assert "wall height" in message

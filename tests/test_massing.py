@@ -84,7 +84,10 @@ def test_openings_map_to_rear_and_right_walls(tmp_path):
 def test_interior_wall_clipped_to_inner_faces(demo_project):
     interior = solid_named(massing_solids(demo_project), "interior_wall_1")
     assert interior.base == Box((0.5, 17.8125, 0.0), (19, 0.375, 9))
-    assert interior.cuts == ()
+    # The 2.5 ft interior door is cut through the wall and the grade line.
+    (door,) = interior.cuts
+    assert door.origin == (3, pytest.approx(17.7125), -0.1)
+    assert door.size == (2.5, pytest.approx(0.575), pytest.approx(6.77))
 
 
 def test_roof_prism_ridge_along_y(demo_project):

@@ -53,7 +53,8 @@ values back as a small table and get a confirmation before moving on.
    swing) and windows (width, height, sill, position). Confirm positions
    using the offset conventions in REFERENCE.md.
 4. **Interior walls & rooms** — wall segments (axis, offset, span,
-   thickness) and a label point for each room.
+   thickness), their doors (position, width, height, swing — see
+   REFERENCE.md), and a label point for each room.
 
 ### 2. Write and validate the config
 
@@ -94,5 +95,5 @@ is satisfied.
 - CodeFrame checks geometry (things must fit where the config puts them),
   not code compliance. It does not verify setbacks against zoning — the
   placement dimensions on the site plan are there for the Drafter to check.
-- Known v1 limits: no openings on interior walls, no attached ADUs, no
-  multi-story, gable roofs only.
+- Known v1 limits: interior walls take doors but not windows, no attached
+  ADUs, no multi-story, gable roofs only.

@@ -100,11 +100,25 @@ def massing_solids(project: ProjectConfig) -> list[Solid]:
         if hi <= lo:
             continue
         half = wall.thickness / 2
+        door_cuts = []
+        for door in wall.doors:
+            if wall.axis == "x":
+                door_cuts.append(Box(
+                    (door.at, wall.offset - half - CUT_CLEARANCE, -CUT_CLEARANCE),
+                    (door.width, wall.thickness + 2 * CUT_CLEARANCE,
+                     door.height + CUT_CLEARANCE),
+                ))
+            else:
+                door_cuts.append(Box(
+                    (wall.offset - half - CUT_CLEARANCE, door.at, -CUT_CLEARANCE),
+                    (wall.thickness + 2 * CUT_CLEARANCE, door.width,
+                     door.height + CUT_CLEARANCE),
+                ))
         if wall.axis == "x":
             base = Box((lo, wall.offset - half, 0.0), (hi - lo, wall.thickness, height))
         else:
             base = Box((wall.offset - half, lo, 0.0), (wall.thickness, hi - lo, height))
-        solids.append(Solid(f"interior_wall_{index}", base))
+        solids.append(Solid(f"interior_wall_{index}", base, tuple(door_cuts)))
 
     solids.append(Solid("roof", _roof_prism(building)))
     return solids

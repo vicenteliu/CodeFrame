@@ -15,13 +15,14 @@ from ezdxf.document import Drawing
 from ezdxf.enums import TextEntityAlignment
 
 from .geometry import (
+    WallFrame,
     elevation_interval,
     elevation_length,
     parse_slope,
     subtract_intervals,
     wall_frame,
 )
-from .schema import Opening, ProjectConfig, Roof
+from .schema import ProjectConfig, Roof
 
 
 class UnsupportedRoofError(ValueError):
@@ -61,6 +62,70 @@ ROOF_PLAN_LAYERS = {
     "A-WALL-BLW": {"color": 8, "lineweight": 18, "linetype": "DASHED"},
     "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
 }
+
+SCHEDULE_LAYERS = {
+    "A-ANNO-TABL": {"color": 7, "lineweight": 25},
+    "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
+}
+
+
+def format_feet_inches(feet: float) -> str:
+    """Format decimal feet as a feet-inches dimension string (6.67 -> 6'-8")."""
+
+    total_inches = round(feet * 12)
+    whole_feet, inches = divmod(total_inches, 12)
+    return f"{whole_feet}'-{inches}\""
+
+
+def _schedule_data(project: ProjectConfig):
+    """Group openings into schedule rows and assign deterministic marks.
+
+    Identical doors share a D-mark (exterior types first, then largest
+    first); identical windows share a W-mark. Returns (door_rows,
+    window_rows, marks) where rows are (mark, width, height, extra, count)
+    and marks maps opening keys — ("ext", wall, offset) for exterior
+    openings, ("int", wall_index, at) for interior doors — to their mark.
+    """
+
+    door_groups: dict = {}
+    window_groups: dict = {}
+    for opening in project.openings:
+        if opening.type == "door":
+            key = ("EXTERIOR", opening.width, opening.height)
+            door_groups.setdefault(key, []).append(("ext", opening.wall, opening.offset))
+        else:
+            key = (opening.width, opening.height, opening.sill or 0.0)
+            window_groups.setdefault(key, []).append(("ext", opening.wall, opening.offset))
+    for wall_index, wall in enumerate(project.interior_walls):
+        for door in wall.doors:
+            key = ("INTERIOR", door.width, door.height)
+            door_groups.setdefault(key, []).append(("int", wall_index, door.at))
+
+    marks: dict = {}
+    door_rows = []
+    door_order = sorted(
+        door_groups,
+        key=lambda k: (0 if k[0] == "EXTERIOR" else 1, -k[1], -k[2]),
+    )
+    for number, key in enumerate(door_order, start=1):
+        mark = f"D{number}"
+        kind, width, height = key
+        refs = door_groups[key]
+        door_rows.append((mark, width, height, kind, len(refs)))
+        for ref in refs:
+            marks[ref] = mark
+
+    window_rows = []
+    window_order = sorted(window_groups, key=lambda k: (-k[0], -k[1], k[2]))
+    for number, key in enumerate(window_order, start=1):
+        mark = f"W{number}"
+        width, height, sill = key
+        refs = window_groups[key]
+        window_rows.append((mark, width, height, format_feet_inches(sill), len(refs)))
+        for ref in refs:
+            marks[ref] = mark
+
+    return door_rows, window_rows, marks
 
 
 def _new_document(layers: dict[str, dict]) -> Drawing:
@@ -158,6 +223,13 @@ def _add_dim(msp, layer: str, p1: tuple[float, float], p2: tuple[float, float], 
     dim.render()
 
 
+def _add_tag(msp, mark: str, at: tuple[float, float]) -> None:
+    """Schedule mark: text in a circle, pointing back to the schedule row."""
+
+    msp.add_circle(center=at, radius=0.7, dxfattribs={"layer": "A-ANNO-TEXT"})
+    _add_label(msp, "A-ANNO-TEXT", mark, at)
+
+
 def write_site_plan(project: ProjectConfig, path: Path) -> None:
     """Write the site plan DXF: lot, setbacks, structures, placement dims."""
 
@@ -232,19 +304,18 @@ def build_site_plan(project: ProjectConfig) -> Drawing:
     return doc
 
 
-def _draw_door(msp, frame, opening: Opening, wall_thickness: float) -> None:
+def _draw_door(msp, frame, s_start: float, width: float, swing: str, wall_thickness: float) -> None:
     """Door leaf drawn open 90 degrees plus its quarter-circle swing arc."""
 
-    assert opening.swing is not None
-    inward = opening.swing.startswith("in")
-    hinge_left = opening.swing.endswith("left")
+    inward = swing.startswith("in")
+    hinge_left = swing.endswith("left")
 
     face_d = wall_thickness if inward else 0.0
     leaf_sign = 1 if inward else -1
-    hinge_s = opening.offset if hinge_left else opening.offset + opening.width
+    hinge_s = s_start if hinge_left else s_start + width
 
     hinge = frame.point(hinge_s, face_d)
-    leaf_tip = frame.point(hinge_s, face_d + leaf_sign * opening.width)
+    leaf_tip = frame.point(hinge_s, face_d + leaf_sign * width)
     msp.add_line(hinge, leaf_tip, dxfattribs={"layer": "A-DOOR"})
 
     strike_angle = frame.angle(0 if hinge_left else 180)
@@ -255,7 +326,7 @@ def _draw_door(msp, frame, opening: Opening, wall_thickness: float) -> None:
         start_angle, end_angle = leaf_angle, strike_angle
     msp.add_arc(
         center=hinge,
-        radius=opening.width,
+        radius=width,
         start_angle=start_angle,
         end_angle=end_angle,
         dxfattribs={"layer": "A-DOOR"},
@@ -275,6 +346,7 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
     building = project.building
     footprint = building.footprint
     thickness = building.exterior_wall_thickness
+    _door_rows, _window_rows, marks = _schedule_data(project)
 
     for wall_name in ("front", "rear", "left", "right"):
         frame = wall_frame(wall_name, footprint.width, footprint.depth)
@@ -300,25 +372,59 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                     dxfattribs={"layer": "A-WALL"},
                 )
             if opening.type == "door":
-                _draw_door(msp, frame, opening, thickness)
+                assert opening.swing is not None
+                _draw_door(msp, frame, opening.offset, opening.width, opening.swing, thickness)
             else:
                 msp.add_line(
                     frame.point(opening.offset, thickness / 2),
                     frame.point(opening.offset + opening.width, thickness / 2),
                     dxfattribs={"layer": "A-GLAZ"},
                 )
+            _add_tag(
+                msp,
+                marks[("ext", opening.wall, opening.offset)],
+                frame.point(opening.offset + opening.width / 2, -1.0),
+            )
 
-    for wall in project.interior_walls:
+    for wall_index, wall in enumerate(project.interior_walls):
         half = wall.thickness / 2
         along = footprint.width if wall.axis == "x" else footprint.depth
         # The drawn extent stops at the exterior walls' inner faces.
         lo = max(wall.from_, thickness)
         hi = min(wall.to, along - thickness)
+        door_cuts = [(door.at, door.at + door.width) for door in wall.doors]
         for face in (wall.offset - half, wall.offset + half):
-            if wall.axis == "x":
-                msp.add_line((lo, face), (hi, face), dxfattribs={"layer": "A-WALL-INTR"})
-            else:
-                msp.add_line((face, lo), (face, hi), dxfattribs={"layer": "A-WALL-INTR"})
+            for piece_lo, piece_hi in subtract_intervals((lo, hi), door_cuts):
+                if wall.axis == "x":
+                    msp.add_line(
+                        (piece_lo, face), (piece_hi, face),
+                        dxfattribs={"layer": "A-WALL-INTR"},
+                    )
+                else:
+                    msp.add_line(
+                        (face, piece_lo), (face, piece_hi),
+                        dxfattribs={"layer": "A-WALL-INTR"},
+                    )
+        # Interior doors: jambs across the thickness, then leaf and swing.
+        # The door frame's s axis runs along the wall, d across it, with d=0
+        # on the negative-side face so "in" swings toward the positive side.
+        if wall.axis == "x":
+            door_frame = WallFrame((0, wall.offset - half), (1, 0), (0, 1), along)
+        else:
+            door_frame = WallFrame((wall.offset - half, 0), (0, 1), (1, 0), along)
+        for door in wall.doors:
+            for jamb_s in (door.at, door.at + door.width):
+                msp.add_line(
+                    door_frame.point(jamb_s, 0),
+                    door_frame.point(jamb_s, wall.thickness),
+                    dxfattribs={"layer": "A-WALL-INTR"},
+                )
+            _draw_door(msp, door_frame, door.at, door.width, door.swing, wall.thickness)
+            _add_tag(
+                msp,
+                marks[("int", wall_index, door.at)],
+                door_frame.point(door.at + door.width / 2, -1.0),
+            )
         # Cap any free-standing end (one that never reaches an exterior wall).
         for end, is_free in ((lo, wall.from_ > thickness), (hi, wall.to < along - thickness)):
             if is_free:
@@ -327,17 +433,62 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                 else:
                     cap = ((wall.offset - half, end), (wall.offset + half, end))
                 msp.add_line(*cap, dxfattribs={"layer": "A-WALL-INTR"})
+        # Locate the wall from the nearest exterior face, at its mid-span.
+        station = (lo + hi) / 2
+        across = footprint.depth if wall.axis == "x" else footprint.width
+        near_face = wall.offset - half
+        if wall.offset > across / 2:
+            span = (wall.offset + half, across)
+        else:
+            span = (0.0, near_face)
+        if wall.axis == "x":
+            _add_dim(
+                msp, "A-ANNO-DIMS", (station, span[0]), (station, span[1]),
+                angle=90, base=(station, span[0]),
+            )
+        else:
+            _add_dim(
+                msp, "A-ANNO-DIMS", (span[0], station), (span[1], station),
+                angle=0, base=(span[0], station),
+            )
 
     for room in project.rooms:
         _add_label(msp, "A-ANNO-TEXT", room.name, (room.label_at.x, room.label_at.y))
 
+    # Opening location chains: corner -> jamb -> jamb -> corner along each
+    # exterior wall that has openings, one dimension row outside the face.
+    chain_rows = {
+        "front": (lambda s: (s, 0), 0, (0, -2.25)),
+        "rear": (lambda s: (s, footprint.depth), 0, (0, footprint.depth + 2.25)),
+        "left": (lambda s: (0, s), 90, (-2.25, 0)),
+        "right": (lambda s: (footprint.width, s), 90, (footprint.width + 2.25, 0)),
+    }
+    for wall_name, (to_point, angle, base) in chain_rows.items():
+        openings = sorted(
+            (o for o in project.openings if o.wall == wall_name),
+            key=lambda o: o.offset,
+        )
+        if not openings:
+            continue
+        length = elevation_length(wall_name, footprint.width, footprint.depth)
+        stations = [0.0]
+        for opening in openings:
+            stations += [opening.offset, opening.offset + opening.width]
+        stations.append(length)
+        for s0, s1 in zip(stations, stations[1:]):
+            if s1 > s0:
+                _add_dim(
+                    msp, "A-ANNO-DIMS", to_point(s0), to_point(s1),
+                    angle=angle, base=base,
+                )
+
     _add_dim(
         msp, "A-ANNO-DIMS", (0, 0), (footprint.width, 0),
-        angle=0, base=(0, -3),
+        angle=0, base=(0, -3.75),
     )
     _add_dim(
         msp, "A-ANNO-DIMS", (0, 0), (0, footprint.depth),
-        angle=90, base=(-3, 0),
+        angle=90, base=(-3.75, 0),
     )
 
     return doc
@@ -422,10 +573,76 @@ def build_elevation(project: ProjectConfig, wall: str) -> Drawing:
 
     _add_label(msp, "A-ANNO-TEXT", f"{wall.upper()} ELEVATION", (length / 2, -2.5))
     _add_dim(
+        msp, "A-ANNO-DIMS", (0, 0), (0, wall_height),
+        angle=90, base=(-overhang - 1.75, 0),
+    )
+    _add_dim(
         msp, "A-ANNO-DIMS", (0, 0), (0, ridge_z),
         angle=90, base=(-overhang - 3, 0),
     )
 
+    return doc
+
+
+def write_schedules(project: ProjectConfig, path: Path) -> None:
+    """Write the door and window schedules DXF."""
+
+    _save(build_schedules(project), path)
+
+
+_SCHEDULE_COLS = [3.0, 4.5, 4.5, 5.5, 3.0]
+_SCHEDULE_ROW_H = 1.5
+
+
+def _draw_table(msp, title: str, headers: list[str], rows: list[tuple], top_left) -> float:
+    """Draw one schedule table; returns the y of its bottom edge."""
+
+    x0, y0 = top_left
+    total_w = sum(_SCHEDULE_COLS)
+    _add_label(msp, "A-ANNO-TEXT", title, (x0 + total_w / 2, y0 + 1.0))
+
+    n_grid_rows = len(rows) + 1  # header + data
+    bottom = y0 - n_grid_rows * _SCHEDULE_ROW_H
+    for i in range(n_grid_rows + 1):
+        y = y0 - i * _SCHEDULE_ROW_H
+        msp.add_line((x0, y), (x0 + total_w, y), dxfattribs={"layer": "A-ANNO-TABL"})
+    x = x0
+    for width in [0.0, *_SCHEDULE_COLS]:
+        x += width
+        msp.add_line((x, y0), (x, bottom), dxfattribs={"layer": "A-ANNO-TABL"})
+
+    for row_index, cells in enumerate([tuple(headers), *rows]):
+        y_mid = y0 - (row_index + 0.5) * _SCHEDULE_ROW_H
+        x = x0
+        for width, cell in zip(_SCHEDULE_COLS, cells):
+            _add_label(msp, "A-ANNO-TEXT", str(cell), (x + width / 2, y_mid))
+            x += width
+    return bottom
+
+
+def build_schedules(project: ProjectConfig) -> Drawing:
+    doc = _new_document(SCHEDULE_LAYERS)
+    msp = doc.modelspace()
+
+    door_rows, window_rows, _marks = _schedule_data(project)
+    door_cells = [
+        (mark, format_feet_inches(w), format_feet_inches(h), kind, count)
+        for mark, w, h, kind, count in door_rows
+    ]
+    window_cells = [
+        (mark, format_feet_inches(w), format_feet_inches(h), f"SILL {sill}", count)
+        for mark, w, h, sill, count in window_rows
+    ]
+
+    bottom = _draw_table(
+        msp, "DOOR SCHEDULE",
+        ["MARK", "WIDTH", "HEIGHT", "TYPE", "QTY"], door_cells, (0.0, 0.0),
+    )
+    _draw_table(
+        msp, "WINDOW SCHEDULE",
+        ["MARK", "WIDTH", "HEIGHT", "SILL", "QTY"], window_cells,
+        (0.0, bottom - 3.5),
+    )
     return doc
 
 

@@ -8,9 +8,11 @@ import pytest
 
 from codeframe.dxf import (
     UnsupportedRoofError,
+    format_feet_inches,
     write_elevation,
     write_floor_plan,
     write_roof_plan,
+    write_schedules,
     write_site_plan,
 )
 from codeframe.schema import load_project_config
@@ -26,6 +28,7 @@ PLAN_WRITERS = [
     ("elevation_rear", lambda project, path: write_elevation(project, "rear", path)),
     ("elevation_left", lambda project, path: write_elevation(project, "left", path)),
     ("elevation_right", lambda project, path: write_elevation(project, "right", path)),
+    ("schedules", write_schedules),
 ]
 
 # Demo roof: gable 4:12 over a 20 ft span, 1 ft overhang, 9 ft walls.
@@ -121,26 +124,36 @@ def test_floor_plan_door_swing_window_and_interior_wall(demo_project, tmp_path):
 
     msp = ezdxf.readfile(out_path).modelspace()
 
-    # In-left door: leaf hinged at (8.5, 0.5), a quarter-circle swing arc.
+    # In-left exterior door: leaf hinged at (8.5, 0.5) plus a swing arc; the
+    # interior door adds a second leaf and arc.
     door_lines = line_segments(msp, "A-DOOR")
     assert segment(8.5, 0.5, 8.5, 3.5) in door_lines
     arcs = msp.query("ARC[layer=='A-DOOR']")
-    assert len(arcs) == 1
-    assert (round(arcs[0].dxf.center.x, 6), round(arcs[0].dxf.center.y, 6)) == (8.5, 0.5)
-    assert round(arcs[0].dxf.radius, 6) == 3
+    assert len(arcs) == 2
+    centers = {
+        (round(arc.dxf.center.x, 6), round(arc.dxf.center.y, 6)) for arc in arcs
+    }
+    assert (8.5, 0.5) in centers
 
     # Window glazing line runs along the wall centerline.
     assert segment(0.25, 6, 0.25, 10) in line_segments(msp, "A-GLAZ")
 
-    # Interior wall: double line clipped to the exterior inner faces.
+    # Interior wall: double line clipped to the exterior inner faces and
+    # broken at the 3..5.5 door, with jambs across the thickness.
     interior = line_segments(msp, "A-WALL-INTR")
-    assert segment(0.5, 17.8125, 19.5, 17.8125) in interior
-    assert segment(0.5, 18.1875, 19.5, 18.1875) in interior
+    for face in (17.8125, 18.1875):
+        assert segment(0.5, face, 3, face) in interior
+        assert segment(5.5, face, 19.5, face) in interior
+    assert segment(3, 17.8125, 3, 18.1875) in interior
+    assert segment(5.5, 17.8125, 5.5, 18.1875) in interior
+    # In-left interior door: leaf hinged at (3, 18.1875) opening toward +y.
+    assert segment(3, 18.1875, 3, 20.6875) in door_lines
 
     labels = {text.dxf.text for text in msp.query("TEXT")}
     assert {"Studio", "Storage"} <= labels
 
-    assert len(msp.query("DIMENSION")) == 2
+    # 2 overall + front chain (3) + left chain (3) + interior wall locate (1).
+    assert len(msp.query("DIMENSION")) == 9
 
 
 def test_floor_plan_is_deterministic(demo_project, tmp_path):
@@ -178,7 +191,8 @@ def test_front_elevation_shows_gable_end(demo_project, tmp_path):
 
     labels = {text.dxf.text for text in msp.query("TEXT")}
     assert "FRONT ELEVATION" in labels
-    assert len(msp.query("DIMENSION")) == 1
+    # Plate height and ridge height.
+    assert len(msp.query("DIMENSION")) == 2
 
 
 def test_left_elevation_is_mirrored_and_shows_eave_side(demo_project, tmp_path):
@@ -225,6 +239,43 @@ def test_roof_plan_shows_outline_ridge_and_slope(demo_project, tmp_path):
     labels = [text.dxf.text for text in msp.query("TEXT")]
     assert labels.count("4:12") == 2
     assert "ROOF PLAN" in labels
+
+
+def test_format_feet_inches():
+    assert format_feet_inches(6.67) == "6'-8\""
+    assert format_feet_inches(2.5) == "2'-6\""
+    assert format_feet_inches(3) == "3'-0\""
+    assert format_feet_inches(0.99) == "1'-0\""
+
+
+def test_schedules_group_openings_with_marks(demo_project, tmp_path):
+    out_path = tmp_path / "schedules.dxf"
+    write_schedules(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = [text.dxf.text for text in msp.query("TEXT")]
+
+    assert "DOOR SCHEDULE" in labels
+    assert "WINDOW SCHEDULE" in labels
+    # D1 = exterior 3'-0" x 6'-8" entry door; D2 = interior 2'-6" door.
+    d1 = labels.index("D1")
+    assert labels[d1:d1 + 5] == ["D1", "3'-0\"", "6'-8\"", "EXTERIOR", "1"]
+    d2 = labels.index("D2")
+    assert labels[d2:d2 + 5] == ["D2", "2'-6\"", "6'-8\"", "INTERIOR", "1"]
+    # W1 = the 4'-0" x 3'-0" window on a 3'-0" sill.
+    w1 = labels.index("W1")
+    assert labels[w1:w1 + 5] == ["W1", "4'-0\"", "3'-0\"", "SILL 3'-0\"", "1"]
+
+
+def test_floor_plan_tags_openings_with_schedule_marks(demo_project, tmp_path):
+    out_path = tmp_path / "floor_plan.dxf"
+    write_floor_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = {text.dxf.text for text in msp.query("TEXT")}
+    assert {"D1", "D2", "W1"} <= labels
+    # One tag circle per opening: front door, interior door, window.
+    assert len(msp.query("CIRCLE[layer=='A-ANNO-TEXT']")) == 3
 
 
 def test_unsupported_roof_type_raises_clear_error(tmp_path):

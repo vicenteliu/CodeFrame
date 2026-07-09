@@ -21,7 +21,13 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
-from .dxf import build_elevation, build_floor_plan, build_roof_plan, build_site_plan
+from .dxf import (
+    build_elevation,
+    build_floor_plan,
+    build_roof_plan,
+    build_schedules,
+    build_site_plan,
+)
 from .schema import ProjectConfig
 
 SHEET_WIDTH = 36.0  # inches, Arch D landscape
@@ -203,3 +209,6 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
             pdf.savefig(fig)
 
             single_doc_page(pdf, roof, "ROOF PLAN", "A4.0", ARCHITECTURAL_SCALES)
+            single_doc_page(
+                pdf, build_schedules(project), "SCHEDULES", "A5.0", ARCHITECTURAL_SCALES
+            )

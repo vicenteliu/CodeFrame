@@ -113,12 +113,29 @@ class Building(_Model):
     roof: Roof
 
 
+class InteriorDoor(_Model):
+    """A door in an interior wall.
+
+    `at` is the near jamb's position along the wall's axis, in the same
+    building-local coordinate as the wall's `from`/`to`. Swing reuses the
+    exterior vocabulary: `left`/`right` hinge at the lower/higher-coordinate
+    jamb; `in` opens toward the positive side of the cross axis (+y for an
+    axis-x wall, +x for an axis-y wall), `out` toward the negative side.
+    """
+
+    at: NonNegativeFeet
+    width: PositiveFeet
+    height: PositiveFeet
+    swing: Literal["in-left", "in-right", "out-left", "out-right"]
+
+
 class InteriorWall(_Model):
     axis: Literal["x", "y"]
     offset: NonNegativeFeet
     from_: NonNegativeFeet = Field(alias="from")
     to: NonNegativeFeet
     thickness: PositiveFeet
+    doors: list[InteriorDoor] = []
 
 
 class Opening(_Model):
@@ -240,6 +257,19 @@ def _geometry_errors(project: ProjectConfig) -> list[str]:
                 f"{wall.offset}, from {wall.from_} to {wall.to}) does not fit the "
                 f"{footprint.width} x {footprint.depth} ft footprint"
             )
+        for door_index, door in enumerate(wall.doors):
+            if door.at < wall.from_ or door.at + door.width > wall.to:
+                errors.append(
+                    f"interior_walls[{index}].doors[{door_index}]: door spans "
+                    f"{door.at} to {door.at + door.width} ft but the wall runs "
+                    f"from {wall.from_} to {wall.to}"
+                )
+            if door.height > building.wall_height:
+                errors.append(
+                    f"interior_walls[{index}].doors[{door_index}]: door is "
+                    f"{door.height} ft tall, above the {building.wall_height} ft "
+                    "wall height"
+                )
 
     for index, room in enumerate(project.rooms):
         if room.label_at.x > footprint.width or room.label_at.y > footprint.depth:
