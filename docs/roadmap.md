@@ -1,40 +1,41 @@
 # Roadmap
 
-## Phase 0: Repository Framework
+Each phase ends with a verification gate; a phase is done only when its gate
+passes.
 
-- Create the Python project skeleton.
-- Add documentation for vision, architecture, roadmap, and limitations.
-- Add one demo residential project configuration.
-- Reserve script and output folders.
+## Phase 1: Explicit-geometry schema
 
-## Phase 1: Structured Project Inputs
+- Project Config v1: site, footprint, wall segments, openings, roof, units.
+- Validation with actionable error messages.
+- Rewrite `examples/demo_residential_project.json` in explicit-geometry form.
+- **Gate:** unit tests cover valid and invalid configs; the CLI validates the
+  demo config end-to-end.
 
-- Define a stronger project schema.
-- Add validation for dimensions, units, levels, rooms, walls, openings, and site
-  assumptions.
-- Add tests for configuration parsing and validation.
+## Phase 2: Floor plan + site plan (DXF)
 
-## Phase 2: FreeCAD Prototype
+- Generate floor plan and site plan geometry as DXF via ezdxf.
+- Layers, line weights, and dimension annotations.
+- **Gate:** golden-file DXF tests pass; the demo config's output opens
+  cleanly in a mainstream CAD tool.
 
-- Generate simple floor plan geometry from structured inputs.
-- Export initial CAD artifacts such as DXF, SVG, or PDF.
-- Explore drawing sheet layout conventions.
+## Phase 3: Elevations, roof plan, PDF sheet set
 
-## Phase 3: Blender Prototype
+- Four elevations and roof plan from the same config.
+- PDF sheet composition with title blocks.
+- **Gate:** the full Drawing Skeleton generates end-to-end from the demo
+  config in one command.
 
-- Generate basic 3D massing from the same project inputs.
-- Export review renders and simple model files.
-- Keep geometry generation reproducible from source configuration.
+## Phase 4: Agent Layer
 
-## Phase 4: Permit Support Research
+- Claude Code skills: guided intake interview → Project Config; a
+  generate-and-review loop.
+- **Gate:** a cold start (empty directory → finished Drawing Skeleton)
+  completes in one conversation without hand-editing JSON.
 
-- Research California residential permit checklist patterns.
-- Track assumptions, required professional review points, and jurisdictional
-  differences.
-- Explore correction-response drafting support.
+## Phase 5: Pilot & pricing
 
-## Phase 5: Commercial Prototype
-
-- Package repeatable workflows.
-- Add project templates and guided input collection.
-- Evaluate reliability, review workflows, and human-in-the-loop controls.
+- Put generated skeletons in front of 1–3 practicing California ADU drafters
+  on real projects.
+- **Gate:** at least one Drafter confirms the skeleton saves two or more
+  hours on a real project and names a price they would pay. Choose per-seat
+  vs per-project pricing from that evidence.

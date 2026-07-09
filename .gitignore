@@ -23,6 +23,7 @@ env/
 
 # Local AI/agent tooling
 .agents/
+.serena/
 CLAUDE.md
 skills-lock.json
 
@@ -68,6 +69,7 @@ outputs/*
 
 # Generated CAD/model/render artifacts
 *.dxf
+!tests/golden/*.dxf
 *.dwg
 *.obj
 *.fbx
@@ -79,6 +81,7 @@ outputs/*
 *.3ds
 *.svg
 *.pdf
+!tests/golden/*.pdf
 *.png
 *.jpg
 *.jpeg

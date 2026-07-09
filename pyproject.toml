@@ -5,22 +5,28 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "codeframe"
 version = "0.1.0"
-description = "Experimental AI-assisted CAD and 3D modeling workflow framework for residential permit preparation."
+description = "Permit-drawing skeleton generator for California detached ADUs: deterministic core with a Claude Code agent layer."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = { text = "Proprietary" }
 authors = [
   { name = "CodeFrame contributors" }
 ]
-keywords = ["cad", "freecad", "blender", "architecture", "permit", "residential"]
+keywords = ["cad", "dxf", "adu", "architecture", "permit", "residential", "california"]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "License :: OSI Approved :: Apache Software License",
 ]
-dependencies = []
+dependencies = ["pydantic>=2", "ezdxf>=1.4", "matplotlib>=3.8"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pypdf"]
+
+[tool.pytest.ini_options]
+# ezdxf internals trip a NumPy 2.5 deprecation; not actionable here.
+filterwarnings = ["ignore:Setting the shape on a NumPy array:DeprecationWarning"]
 
 [project.scripts]
 codeframe = "codeframe.cli:main"

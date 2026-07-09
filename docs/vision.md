@@ -1,23 +1,31 @@
 # Vision
 
-CodeFrame explores an AI-assisted workflow for producing early residential CAD
-and 3D modeling artifacts from structured project inputs.
+CodeFrame sells time back to California ADU drafters.
 
-The project is intended to become a bridge between natural-language planning,
-structured building data, FreeCAD drawing generation, Blender model generation,
-and future permit-preparation support workflows.
+An independent drafter or design-build firm producing a detached-ADU permit
+package spends hours on repetitive drawing setup: site plan with setbacks,
+floor plan, four elevations, roof plan, sheet layout. CodeFrame generates
+that Drawing Skeleton in minutes from a structured Project Config, filled in
+through a guided Claude Code conversation. The Drafter finishes the drawings,
+verifies compliance, and takes professional responsibility — CodeFrame never
+submits anything.
 
-## Long-Term Direction
+## Product principles
 
-- Convert residential project inputs into simple architectural drawing geometry.
-- Generate basic 3D building models that can be reviewed and iterated on.
-- Maintain traceable project assumptions, dimensions, materials, and notes.
-- Support California residential permit checklist research and correction
-  response drafting in future phases.
-- Provide a foundation for a commercial prototype without locking the project
-  into one CAD or rendering workflow too early.
+- **The Drafter is the customer.** Value is measured in hours saved per
+  project, by professionals who carry their own review responsibility.
+- **Deterministic Core, agentic shell.** AI helps capture intent; geometry
+  generation is reproducible and testable without AI.
+- **Explicit geometry only.** The core never invents dimensions or layouts.
+- **Narrow and deep.** One jurisdiction (California), one building type
+  (detached ADU), one deliverable (the Drawing Skeleton) — done properly
+  before anything widens. Modules stay small, focused, and well documented.
+- **Closed source.** Revenue comes from selling outcomes (per seat or per
+  project); the moat is California templates, jurisdiction data, and
+  continuous updates — not the code itself.
 
-## Near-Term Principle
+## Later (deliberately not v1)
 
-Start with structured inputs and reproducible outputs before adding complex AI
-or jurisdiction-specific logic.
+- Permit checklists and correction-response drafting per jurisdiction.
+- 3D massing and renders for client presentations.
+- Attached ADUs, additions, remodels, other states.

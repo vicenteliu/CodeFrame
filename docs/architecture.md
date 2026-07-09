@@ -1,24 +1,30 @@
 # Architecture
 
-CodeFrame is organized around a staged workflow:
+CodeFrame is two layers with a hard boundary (terms defined in `CONTEXT.md`):
 
-1. Residential project input files define the intended building scenario.
-2. Python modules validate and normalize project data.
-3. Future FreeCAD scripts generate 2D CAD geometry and drawing sheets.
-4. Future Blender scripts generate 3D massing, model views, and renders.
-5. Generated files are written to `outputs/` and kept out of source control.
+1. **Agent Layer** — Claude Code skills that interview the Drafter, fill the
+   Project Config, and orchestrate the core. Conversational convenience lives
+   here: unit conversions, computing opening positions from a description,
+   checking a config for completeness. It never draws geometry and never
+   bypasses the Project Config.
+2. **Deterministic Core** — the `codeframe` Python package. Project Config
+   in, Drawing Skeleton out. No AI, no network, no auto-layout. Runs
+   standalone: `python -m codeframe <config>`.
 
-## Current Components
+## Core modules
 
-- `src/codeframe/`: minimal Python package and project configuration loader.
-- `examples/`: sample structured inputs.
-- `scripts/freecad/`: reserved for FreeCAD automation entry points.
-- `scripts/blender/`: reserved for Blender automation entry points.
-- `docs/`: project planning and guardrail documentation.
-- `outputs/`: local generated artifacts.
+A single package with clear internal boundaries; split into separate packages
+only if and when a real need appears:
 
-## Future Integration Boundaries
+- `codeframe.schema` — Project Config models, validation, schema versioning.
+- `codeframe.geometry` — plan/elevation/roof geometry math (pure functions).
+- `codeframe.dxf` — DXF output via ezdxf.
+- `codeframe.sheets` — PDF sheet composition and title blocks.
 
-FreeCAD and Blender automation should remain scriptable and reproducible. The
-core Python package should focus on project data, validation, orchestration, and
-shared utilities rather than embedding tool-specific assumptions everywhere.
+## Rules
+
+- Every artifact must be reproducible from the Project Config alone.
+- Geometry is explicit in the config; the core never infers or arranges
+  (see `docs/adr/0002-explicit-geometry-no-auto-layout.md`).
+- Golden-file tests pin DXF/PDF outputs for the example configs.
+- Generated files go to `outputs/` and stay out of source control.
