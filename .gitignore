@@ -55,6 +55,8 @@ outputs/*
 *.iges
 *.igs
 *.brep
+# ...but golden test fixtures are tracked
+!tests/golden/*.step
 
 # Blender
 *.blend

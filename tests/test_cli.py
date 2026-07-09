@@ -62,6 +62,15 @@ def test_generate_writes_the_full_drawing_skeleton(tmp_path, capsys):
     for name in EXPECTED_OUTPUTS:
         assert (out_dir / name).exists()
         assert name in captured.out
+    # The 3D massing model is written when FreeCAD is installed and
+    # announced as skipped when it is not.
+    from codeframe.massing import freecadcmd_available
+
+    if freecadcmd_available():
+        assert (out_dir / "model_3d.step").exists()
+        assert "model_3d.step" in captured.out
+    else:
+        assert "Skipped model_3d.step" in captured.out
 
 
 def test_schema_prints_the_project_config_json_schema(capsys):

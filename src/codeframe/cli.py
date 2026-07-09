@@ -14,6 +14,7 @@ from .dxf import (
     write_roof_plan,
     write_site_plan,
 )
+from .massing import MassingExportError, freecadcmd_available, write_massing_model
 from .schema import ProjectConfig, ProjectConfigError, load_project_config
 from .sheets import write_sheet_set
 
@@ -107,6 +108,8 @@ def main(argv: list[str] | None = None) -> int:
         ],
         ("drawing_set.pdf", write_sheet_set),
     ]
+    if freecadcmd_available():
+        writers.append(("model_3d.step", write_massing_model))
 
     out_dir = args.out if args.out is not None else Path(project.output_target)
     try:
@@ -115,7 +118,9 @@ def main(argv: list[str] | None = None) -> int:
             out_path = out_dir / name
             writer(project, out_path)
             print(f"Wrote {out_path}")
-    except UnsupportedRoofError as exc:
+    except (UnsupportedRoofError, MassingExportError) as exc:
         print(exc, file=sys.stderr)
         return 1
+    if not freecadcmd_available():
+        print("Skipped model_3d.step: freecadcmd not found (install FreeCAD to enable it)")
     return 0
