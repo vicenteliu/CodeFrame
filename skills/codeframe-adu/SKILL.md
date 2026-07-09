@@ -75,6 +75,8 @@ codeframe generate <project-slug>.json
 This writes the full Drawing Skeleton to the config's `output_target`:
 `site_plan.dxf`, `floor_plan.dxf`, `roof_plan.dxf`, four
 `elevation_*.dxf`, and `drawing_set.pdf` (Arch D sheets with title blocks).
+When FreeCAD is installed it also writes `model_3d.step`, the 3D Massing
+Model (otherwise the CLI prints a skip notice — that is fine, not an error).
 Tell the Drafter where the files are and to start with `drawing_set.pdf`.
 
 ### 4. Review loop

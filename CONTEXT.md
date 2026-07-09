@@ -30,6 +30,15 @@ exported as editable DXF plus a PDF sheet set. Deliberately incomplete
 (~60–70%): the Drafter finishes details, checks compliance, and signs off.
 Not a permit set, not construction documents.
 
+### Massing Model（体量模型）
+An optional 3D companion to the Drawing Skeleton: `model_3d.step`, the
+building as a few solids (exterior wall shell with openings cut out,
+interior walls, roof prism), generated from the same Project Config — never
+reconstructed from the DXF. For owner communication and design review only:
+not a BIM model, carries no materials or assemblies. Requires FreeCAD
+(`freecadcmd`) at generation time; `codeframe generate` skips it with a
+notice when FreeCAD is absent (see ADR 0003).
+
 ### Deterministic Core
 The Python package that turns a Project Config into a Drawing Skeleton with
 no AI involvement. Same input, same output, fully testable offline. It must
