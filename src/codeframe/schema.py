@@ -146,11 +146,14 @@ class Opening(_Model):
     height: PositiveFeet
     sill: NonNegativeFeet | None = None
     swing: Literal["in-left", "in-right", "out-left", "out-right"] | None = None
+    egress: bool = False
 
 
 class Room(_Model):
     name: str
     label_at: Point
+    # Stated by the Drafter, never computed: rooms are label points only.
+    area: PositiveFeet | None = None
 
 
 class ProjectConfig(_Model):
@@ -244,6 +247,36 @@ def _geometry_errors(project: ProjectConfig) -> list[str]:
                 f"openings[{index}]: {opening.type} reaches {top} ft, above the "
                 f"{building.wall_height} ft wall height"
             )
+        if opening.egress:
+            if opening.type == "door":
+                errors.append(f"openings[{index}]: egress applies to windows only")
+            else:
+                # Geometric necessities for a CRC R310 escape opening: the
+                # gross opening can never satisfy limits its geometry breaks.
+                # (Net clear opening still depends on the window type — the
+                # Drafter verifies that.)
+                sill = opening.sill or 0.0
+                if sill > 44 / 12:
+                    errors.append(
+                        f"openings[{index}]: egress window sill is {sill} ft; "
+                        "CRC R310 allows at most 44 in (3.67 ft)"
+                    )
+                if opening.width < 20 / 12:
+                    errors.append(
+                        f"openings[{index}]: egress window is {opening.width} ft "
+                        "wide; CRC R310 needs at least 20 in of clear width"
+                    )
+                if opening.height < 2.0:
+                    errors.append(
+                        f"openings[{index}]: egress window is {opening.height} ft "
+                        "tall; CRC R310 needs at least 24 in of clear height"
+                    )
+                if opening.width * opening.height < 5.7:
+                    errors.append(
+                        f"openings[{index}]: egress window opening is only "
+                        f"{opening.width * opening.height:.2f} sq ft gross; CRC "
+                        "R310 needs a 5.7 sq ft net clear opening"
+                    )
 
     for index, wall in enumerate(project.interior_walls):
         across, along = (

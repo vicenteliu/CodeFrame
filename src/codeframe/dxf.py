@@ -94,7 +94,7 @@ def _schedule_data(project: ProjectConfig):
             key = ("EXTERIOR", opening.width, opening.height)
             door_groups.setdefault(key, []).append(("ext", opening.wall, opening.offset))
         else:
-            key = (opening.width, opening.height, opening.sill or 0.0)
+            key = (opening.width, opening.height, opening.sill or 0.0, opening.egress)
             window_groups.setdefault(key, []).append(("ext", opening.wall, opening.offset))
     for wall_index, wall in enumerate(project.interior_walls):
         for door in wall.doors:
@@ -116,12 +116,16 @@ def _schedule_data(project: ProjectConfig):
             marks[ref] = mark
 
     window_rows = []
-    window_order = sorted(window_groups, key=lambda k: (-k[0], -k[1], k[2]))
+    window_order = sorted(
+        window_groups, key=lambda k: (-k[0], -k[1], k[2], not k[3])
+    )
     for number, key in enumerate(window_order, start=1):
         mark = f"W{number}"
-        width, height, sill = key
+        width, height, sill, egress = key
         refs = window_groups[key]
-        window_rows.append((mark, width, height, format_feet_inches(sill), len(refs)))
+        window_rows.append(
+            (mark, width, height, format_feet_inches(sill), len(refs), egress)
+        )
         for ref in refs:
             marks[ref] = mark
 
@@ -385,6 +389,11 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                 marks[("ext", opening.wall, opening.offset)],
                 frame.point(opening.offset + opening.width / 2, -1.0),
             )
+            if opening.egress:
+                _add_label(
+                    msp, "A-ANNO-TEXT", "EGRESS",
+                    frame.point(opening.offset + opening.width / 2, thickness + 1.0),
+                )
 
     for wall_index, wall in enumerate(project.interior_walls):
         half = wall.thickness / 2
@@ -454,6 +463,11 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
 
     for room in project.rooms:
         _add_label(msp, "A-ANNO-TEXT", room.name, (room.label_at.x, room.label_at.y))
+        if room.area is not None:
+            _add_label(
+                msp, "A-ANNO-TEXT", f"{room.area:g} SF",
+                (room.label_at.x, room.label_at.y - 1.0),
+            )
 
     # Opening location chains: corner -> jamb -> jamb -> corner along each
     # exterior wall that has openings, one dimension row outside the face.
@@ -590,7 +604,7 @@ def write_schedules(project: ProjectConfig, path: Path) -> None:
     _save(build_schedules(project), path)
 
 
-_SCHEDULE_COLS = [3.0, 4.5, 4.5, 5.5, 3.0]
+_SCHEDULE_COLS = [3.0, 4.5, 4.5, 5.5, 3.0, 5.0]
 _SCHEDULE_ROW_H = 1.5
 
 
@@ -615,7 +629,8 @@ def _draw_table(msp, title: str, headers: list[str], rows: list[tuple], top_left
         y_mid = y0 - (row_index + 0.5) * _SCHEDULE_ROW_H
         x = x0
         for width, cell in zip(_SCHEDULE_COLS, cells):
-            _add_label(msp, "A-ANNO-TEXT", str(cell), (x + width / 2, y_mid))
+            if str(cell):
+                _add_label(msp, "A-ANNO-TEXT", str(cell), (x + width / 2, y_mid))
             x += width
     return bottom
 
@@ -626,21 +641,22 @@ def build_schedules(project: ProjectConfig) -> Drawing:
 
     door_rows, window_rows, _marks = _schedule_data(project)
     door_cells = [
-        (mark, format_feet_inches(w), format_feet_inches(h), kind, count)
+        (mark, format_feet_inches(w), format_feet_inches(h), kind, count, "")
         for mark, w, h, kind, count in door_rows
     ]
     window_cells = [
-        (mark, format_feet_inches(w), format_feet_inches(h), f"SILL {sill}", count)
-        for mark, w, h, sill, count in window_rows
+        (mark, format_feet_inches(w), format_feet_inches(h), f"SILL {sill}",
+         count, "EGRESS" if egress else "")
+        for mark, w, h, sill, count, egress in window_rows
     ]
 
     bottom = _draw_table(
         msp, "DOOR SCHEDULE",
-        ["MARK", "WIDTH", "HEIGHT", "TYPE", "QTY"], door_cells, (0.0, 0.0),
+        ["MARK", "WIDTH", "HEIGHT", "TYPE", "QTY", "REMARKS"], door_cells, (0.0, 0.0),
     )
     _draw_table(
         msp, "WINDOW SCHEDULE",
-        ["MARK", "WIDTH", "HEIGHT", "SILL", "QTY"], window_cells,
+        ["MARK", "WIDTH", "HEIGHT", "SILL", "QTY", "REMARKS"], window_cells,
         (0.0, bottom - 3.5),
     )
     return doc

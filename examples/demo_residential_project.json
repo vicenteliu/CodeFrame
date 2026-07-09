@@ -24,11 +24,11 @@
   ],
   "openings": [
     { "type": "door", "wall": "front", "offset": 8.5, "width": 3, "height": 6.67, "swing": "in-left" },
-    { "type": "window", "wall": "left", "offset": 6, "width": 4, "height": 3, "sill": 3 }
+    { "type": "window", "wall": "left", "offset": 6, "width": 4, "height": 3, "sill": 3, "egress": true }
   ],
   "rooms": [
-    { "name": "Studio", "label_at": { "x": 10, "y": 9 } },
-    { "name": "Storage", "label_at": { "x": 10, "y": 21 } }
+    { "name": "Studio", "label_at": { "x": 10, "y": 9 }, "area": 329 },
+    { "name": "Storage", "label_at": { "x": 10, "y": 21 }, "area": 101 }
   ],
   "notes": [
     "Demo input only; dimensions and setbacks are placeholders.",

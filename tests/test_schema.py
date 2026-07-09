@@ -209,6 +209,32 @@ def test_file_that_is_not_json_reports_json_error(tmp_path):
     assert "JSON" in str(exc_info.value)
 
 
+def test_egress_applies_to_windows_only(tmp_path):
+    message = error_from_mutated_demo(
+        tmp_path, lambda data: data["openings"][0].update(egress=True)
+    )
+    assert "openings[0]" in message
+    assert "windows only" in message
+
+
+def test_egress_window_sill_capped_at_44_inches(tmp_path):
+    def mutate(data):
+        data["openings"][1].update(sill=4, height=3)
+
+    message = error_from_mutated_demo(tmp_path, mutate)
+    assert "openings[1]" in message
+    assert "44 in" in message
+
+
+def test_egress_window_needs_5_7_sq_ft_gross(tmp_path):
+    def mutate(data):
+        data["openings"][1].update(width=2, height=2.5, sill=3)
+
+    message = error_from_mutated_demo(tmp_path, mutate)
+    assert "openings[1]" in message
+    assert "5.7 sq ft" in message
+
+
 def test_interior_door_is_loaded():
     project = load_project_config(DEMO_CONFIG)
     door = project.interior_walls[0].doors[0]

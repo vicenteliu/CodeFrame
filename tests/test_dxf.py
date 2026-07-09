@@ -151,6 +151,9 @@ def test_floor_plan_door_swing_window_and_interior_wall(demo_project, tmp_path):
 
     labels = {text.dxf.text for text in msp.query("TEXT")}
     assert {"Studio", "Storage"} <= labels
+    # Stated room areas render under the labels; the designated egress
+    # window is called out inside the wall face.
+    assert {"329 SF", "101 SF", "EGRESS"} <= labels
 
     # 2 overall + front chain (3) + left chain (3) + interior wall locate (1).
     assert len(msp.query("DIMENSION")) == 9
@@ -262,9 +265,11 @@ def test_schedules_group_openings_with_marks(demo_project, tmp_path):
     assert labels[d1:d1 + 5] == ["D1", "3'-0\"", "6'-8\"", "EXTERIOR", "1"]
     d2 = labels.index("D2")
     assert labels[d2:d2 + 5] == ["D2", "2'-6\"", "6'-8\"", "INTERIOR", "1"]
-    # W1 = the 4'-0" x 3'-0" window on a 3'-0" sill.
+    # W1 = the 4'-0" x 3'-0" egress window on a 3'-0" sill.
     w1 = labels.index("W1")
-    assert labels[w1:w1 + 5] == ["W1", "4'-0\"", "3'-0\"", "SILL 3'-0\"", "1"]
+    assert labels[w1:w1 + 6] == [
+        "W1", "4'-0\"", "3'-0\"", "SILL 3'-0\"", "1", "EGRESS",
+    ]
 
 
 def test_floor_plan_tags_openings_with_schedule_marks(demo_project, tmp_path):

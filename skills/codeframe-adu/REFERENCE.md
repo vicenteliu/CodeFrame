@@ -105,6 +105,19 @@ Placeholders are fine at skeleton stage — the Drafter refines them in CAD.
 windows. Typical: 3.0 for standard windows, 3.5–4.0 over counters. The core
 rejects windows that rise above the wall height.
 
+Set `egress: true` on the designated escape window of every sleeping room.
+It draws an EGRESS callout on the floor plan and in the window schedule,
+and the core rejects geometry that can never satisfy CRC R310 (sill over
+44", clear width under 20", clear height under 24", gross opening under
+5.7 sq ft). Net clear opening depends on the window type — the Drafter
+still verifies it.
+
+## Room areas
+
+`rooms[].area` (square feet) is optional and STATED, never computed —
+compute it yourself from the wall geometry during the interview and
+confirm it with the Drafter. It renders under the room label as "329 SF".
+
 ## What the core will NOT do
 
 - No auto-layout: rooms are labels only; walls and openings are drawn
