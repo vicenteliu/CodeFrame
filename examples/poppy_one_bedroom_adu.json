@@ -256,7 +256,7 @@
       "type": "kitchen-sink",
       "at": {
         "x": 21.1,
-        "y": 4
+        "y": 4.0
       },
       "rotation": 270
     },
@@ -264,17 +264,16 @@
       "type": "range",
       "at": {
         "x": 21.1,
-        "y": 6.5
+        "y": 7.5
       },
       "rotation": 270
     },
     {
       "type": "refrigerator",
       "at": {
-        "x": 20.7,
-        "y": 2
-      },
-      "rotation": 270
+        "x": 18,
+        "y": 1.8
+      }
     },
     {
       "type": "toilet",

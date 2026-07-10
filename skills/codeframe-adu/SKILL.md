@@ -72,6 +72,12 @@ codeframe validate <project-slug>.json
 Errors carry field paths and are actionable. Fix the config (asking the
 Drafter when the fix needs a decision) and re-validate until it passes.
 
+Then run the layout review (skills/codeframe-layout-review) — its
+mechanical checks and render walk are REQUIRED before any drawing goes to
+the Drafter. Validation proves the config is well-formed; the layout
+review proves the plan works as a building (doors land on clear floor,
+fixtures don't clash, every sleeping room has egress).
+
 ### 3. Generate
 
 ```bash

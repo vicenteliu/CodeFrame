@@ -276,7 +276,7 @@
     {
       "type": "lavatory",
       "at": {
-        "x": 5.5,
+        "x": 3.6,
         "y": 18.8
       }
     },
@@ -304,7 +304,7 @@
       "type": "kitchen-sink",
       "at": {
         "x": 24.1,
-        "y": 4
+        "y": 4.0
       },
       "rotation": 270
     },
@@ -312,7 +312,7 @@
       "type": "range",
       "at": {
         "x": 24.1,
-        "y": 6.5
+        "y": 7.5
       },
       "rotation": 270
     },
@@ -320,7 +320,7 @@
       "type": "refrigerator",
       "at": {
         "x": 23.7,
-        "y": 2
+        "y": 10.8
       },
       "rotation": 270
     },
@@ -328,7 +328,7 @@
       "type": "washer-dryer",
       "at": {
         "x": 10.3,
-        "y": 16.5
+        "y": 14.2
       },
       "rotation": 90
     },
