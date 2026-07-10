@@ -26,6 +26,7 @@ from .dxf import (
     build_floor_plan,
     build_foundation_plan,
     build_general_notes,
+    build_roof_framing_plan,
     build_roof_plan,
     build_schedules,
     build_section,
@@ -231,4 +232,9 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
                 single_doc_page(
                     pdf, build_foundation_plan(project), "FOUNDATION PLAN",
                     "S1.0", ARCHITECTURAL_SCALES,
+                )
+            if project.building.roof.framing is not None:
+                single_doc_page(
+                    pdf, build_roof_framing_plan(project), "ROOF FRAMING PLAN",
+                    "S2.0", ARCHITECTURAL_SCALES,
                 )

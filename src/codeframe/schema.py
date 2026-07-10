@@ -83,12 +83,24 @@ class Footprint(_Model):
     depth: PositiveFeet
 
 
+class RoofFraming(_Model):
+    """Roof framing parameters for sheet S2. All member sizes are stated
+    by the Drafter — CodeFrame lays out and labels, never sizes."""
+
+    member: Literal["rafter", "truss"]
+    size: str
+    spacing: PositiveFeet
+    species_grade: str | None = None
+    ridge: str | None = None
+
+
 class Roof(_Model):
     type: Literal["gable", "shed", "flat"]
     slope: str
     ridge_axis: Literal["x", "y"] | None = None
     high_side: Literal["front", "rear", "left", "right"] | None = None
     overhang: NonNegativeFeet = 0
+    framing: RoofFraming | None = None
 
     @field_validator("slope")
     @classmethod
@@ -104,6 +116,10 @@ class Roof(_Model):
         if self.type == "shed" and self.high_side is None:
             raise ValueError(
                 "shed roof requires a high_side (front, rear, left, or right)"
+            )
+        if self.framing is not None and self.ridge_axis is None:
+            raise ValueError(
+                "roof framing requires a gable roof with a ridge_axis"
             )
         return self
 

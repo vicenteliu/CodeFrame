@@ -17,7 +17,13 @@
     "footprint": { "width": 20, "depth": 24 },
     "wall_height": 9,
     "exterior_wall_thickness": 0.5,
-    "roof": { "type": "gable", "slope": "4:12", "ridge_axis": "y", "overhang": 1 },
+    "roof": {
+      "type": "gable", "slope": "4:12", "ridge_axis": "y", "overhang": 1,
+      "framing": {
+        "member": "rafter", "size": "2x8", "spacing": 2,
+        "species_grade": "DF #2", "ridge": "2x10 RIDGE BOARD"
+      }
+    },
     "foundation": {
       "type": "slab-on-grade",
       "footing_width": 1,

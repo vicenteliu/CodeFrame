@@ -13,6 +13,7 @@ from codeframe.dxf import (
     write_floor_plan,
     write_foundation_plan,
     write_general_notes,
+    write_roof_framing_plan,
     write_roof_plan,
     write_schedules,
     write_section,
@@ -38,6 +39,7 @@ PLAN_WRITERS = [
     ),
     ("general_notes", write_general_notes),
     ("foundation_plan", write_foundation_plan),
+    ("roof_framing_plan", write_roof_framing_plan),
 ]
 
 # Demo roof: gable 4:12 over a 20 ft span, 1 ft overhang, 9 ft walls.
@@ -467,6 +469,55 @@ def test_foundation_plan_draws_bearing_wall_footing(tmp_path):
     assert {(0.5, 17.5), (19.5, 17.5), (19.5, 18.5), (0.5, 18.5)} in footings
     labels = {text.dxf.text for text in msp.query("TEXT")}
     assert "BEARING WALL FOOTING" in labels
+
+
+def test_roof_framing_plan_lays_out_rafters(demo_project, tmp_path):
+    out_path = tmp_path / "roof_framing_plan.dxf"
+    write_roof_framing_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+
+    # 24 ft ridge run at 24" o.c. -> members at 0, 2, ..., 24 = 13 rafters
+    # spanning eave to eave including the 1 ft overhangs.
+    rafters = line_segments(msp, "S-FRAM-RAFT")
+    assert len(rafters) == 13
+    assert segment(-1, 0, 21, 0) in rafters
+    assert segment(-1, 12, 21, 12) in rafters
+    assert segment(-1, 24, 21, 24) in rafters
+
+    # Bold ridge member along y at mid-width, through the rake overhangs.
+    assert segment(10, -1, 10, 25) in line_segments(msp, "S-FRAM-RIDG")
+
+    labels = [text.dxf.text for text in msp.query("TEXT")]
+    assert "2x8 DF #2 RAFTERS @ 24\" O.C." in labels
+    assert "RIDGE: 2x10 RIDGE BOARD" in labels
+    assert "ROOF FRAMING PLAN" in labels
+    joined = "\n".join(labels)
+    assert "RAFTER TIES MIN 2x4 @ 48 IN O.C." in joined
+    assert "CRC TABLES R802.4.1(1)-(9)" in joined
+    assert len(msp.query("DIMENSION")) == 2
+
+
+def test_roof_framing_truss_variant_notes_deferred_submittal(tmp_path):
+    import json
+
+    data = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
+    data["building"]["roof"]["framing"] = {
+        "member": "truss", "size": "PRE-ENG", "spacing": 2,
+    }
+    config_path = tmp_path / "truss.json"
+    config_path.write_text(json.dumps(data), encoding="utf-8")
+    project = load_project_config(config_path)
+
+    out_path = tmp_path / "roof_framing_plan.dxf"
+    write_roof_framing_plan(project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = [text.dxf.text for text in msp.query("TEXT")]
+    assert "PRE-ENG TRUSSES @ 24\" O.C." in labels
+    joined = "\n".join(labels)
+    assert "DEFERRED SUBMITTAL" in joined
+    assert "CRC R802.10.1" in joined
 
 
 def test_unsupported_roof_type_raises_clear_error(tmp_path):

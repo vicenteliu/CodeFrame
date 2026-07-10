@@ -90,6 +90,14 @@ FOUNDATION_LAYERS = {
     "A-ANNO-DIMS": {"color": 3, "lineweight": 13},
 }
 
+FRAMING_LAYERS = {
+    "S-FRAM": {"color": 7, "lineweight": 35},
+    "S-FRAM-RAFT": {"color": 8, "lineweight": 18},
+    "S-FRAM-RIDG": {"color": 7, "lineweight": 50},
+    "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
+    "A-ANNO-DIMS": {"color": 3, "lineweight": 13},
+}
+
 
 def format_feet_inches(feet: float) -> str:
     """Format decimal feet as a feet-inches dimension string (6.67 -> 6'-8")."""
@@ -874,6 +882,130 @@ def build_foundation_plan(project: ProjectConfig) -> Drawing:
     note_x = width + 6.0
     cursor = depth - 2.0
     _add_note_line(msp, "FOUNDATION NOTES", (note_x, cursor))
+    cursor -= 1.6
+    for line in notes:
+        _add_note_line(msp, line, (note_x, cursor))
+        cursor -= 1.2
+
+    return doc
+
+
+def write_roof_framing_plan(project: ProjectConfig, path: Path) -> None:
+    """Write the roof framing plan DXF (sheet S2)."""
+
+    _save(build_roof_framing_plan(project), path)
+
+
+def _framing_stations(length: float, spacing: float) -> list[float]:
+    """Member stations at `spacing` o.c. plus a closing member at the end."""
+
+    stations = []
+    station = 0.0
+    while station < length - 1e-9:
+        stations.append(station)
+        station += spacing
+    stations.append(length)
+    return stations
+
+
+def build_roof_framing_plan(project: ProjectConfig) -> Drawing:
+    building = project.building
+    roof = building.roof
+    framing = roof.framing
+    assert framing is not None, "caller checks roof.framing"
+    _require_gable(roof)
+
+    doc = _new_document(FRAMING_LAYERS)
+    msp = doc.modelspace()
+
+    footprint = building.footprint
+    width, depth = footprint.width, footprint.depth
+    overhang = roof.overhang
+    ridge_is_y = roof.ridge_axis == "y"
+    ridge_run = depth if ridge_is_y else width
+
+    # Supporting walls, the ridge member, and the member layout. Members
+    # span across the ridge, laid out along it at the stated spacing.
+    _add_rectangle(msp, "S-FRAM", 0, 0, width, depth)
+    if ridge_is_y:
+        msp.add_line(
+            (width / 2, -overhang), (width / 2, depth + overhang),
+            dxfattribs={"layer": "S-FRAM-RIDG"},
+        )
+        for station in _framing_stations(ridge_run, framing.spacing):
+            msp.add_line(
+                (-overhang, station), (width + overhang, station),
+                dxfattribs={"layer": "S-FRAM-RAFT"},
+            )
+    else:
+        msp.add_line(
+            (-overhang, depth / 2), (width + overhang, depth / 2),
+            dxfattribs={"layer": "S-FRAM-RIDG"},
+        )
+        for station in _framing_stations(ridge_run, framing.spacing):
+            msp.add_line(
+                (station, -overhang), (station, depth + overhang),
+                dxfattribs={"layer": "S-FRAM-RAFT"},
+            )
+
+    # Member callout with a span arrow perpendicular to the ridge.
+    spacing_inches = framing.spacing * 12
+    member_name = "RAFTERS" if framing.member == "rafter" else "TRUSSES"
+    grade = f" {framing.species_grade}" if framing.species_grade else ""
+    callout = f"{framing.size}{grade} {member_name} @ {spacing_inches:g}\" O.C."
+    if ridge_is_y:
+        arrow = ((width / 2 + 2, depth / 2), (width - 2, depth / 2))
+        label_at = (3 * width / 4, depth / 2 + 1.5)
+    else:
+        arrow = ((width / 2, depth / 2 + 2), (width / 2, depth - 2))
+        label_at = (width / 2, 3 * depth / 4 + 1.5)
+    msp.add_line(*arrow, dxfattribs={"layer": "A-ANNO-TEXT"})
+    for end, sign in ((arrow[0], 1), (arrow[1], -1)):
+        axis = 0 if ridge_is_y else 1
+        for wing in (0.5, -0.5):
+            head = list(end)
+            head[axis] += sign * 1.0
+            head[1 - axis] += wing
+            msp.add_line(end, tuple(head), dxfattribs={"layer": "A-ANNO-TEXT"})
+    _add_label(msp, "A-ANNO-TEXT", callout, label_at)
+    if framing.ridge:
+        ridge_label_at = (
+            (width / 2, depth + overhang + 1.5) if ridge_is_y
+            else (width + overhang + 4, depth / 2)
+        )
+        _add_label(msp, "A-ANNO-TEXT", f"RIDGE: {framing.ridge}", ridge_label_at)
+
+    _add_dim(msp, "A-ANNO-DIMS", (0, 0), (width, 0), angle=0, base=(0, -3))
+    _add_dim(msp, "A-ANNO-DIMS", (0, 0), (0, depth), angle=90, base=(-3, 0))
+    _add_label(msp, "A-ANNO-TEXT", "ROOF FRAMING PLAN", (width / 2, -5.5))
+
+    notes = [
+        "MEMBER SPANS: VERIFY PER CRC TABLES R802.4.1(1)-(9).",
+        "BLOCKING: SOLID BLOCK ALL MEMBERS AT EXTERIOR WALLS (CRC R802.8).",
+        "SHEATHING: NAILING 8d @ 6 IN EDGES / 12 IN FIELD PER CRC TABLE",
+        "R602.3(1); PANEL EDGES NAILED TO BLOCKING.",
+        "UPLIFT CONNECTORS WHERE UPLIFT EXCEEDS 200 LB PER MEMBER",
+        "(CRC TABLE R802.11).",
+        "ATTIC VENTILATION: 1/150 (OR 1/300 PER R806.2 EXCEPTIONS).",
+        "HEADERS PER CRC TABLE R602.7 UNLESS NOTED.",
+    ]
+    if framing.member == "rafter":
+        notes += [
+            "RAFTER TIES MIN 2x4 @ 48 IN O.C. MAX (CRC R802.5.2.2) OR RIDGE",
+            "BEAM WITH SUPPORTS; COLLAR TIES PER CRC R802.4.6.",
+        ]
+    else:
+        notes += [
+            "TRUSS PACKAGE IS A DEFERRED SUBMITTAL: CA-ENGINEER-STAMPED",
+            "TRUSS CALCS AND LAYOUT REQUIRED (CRC R802.10.1).",
+        ]
+    notes += [
+        "PRELIMINARY SKELETON: A QUALIFIED PROFESSIONAL MUST VERIFY ALL",
+        "MEMBER SIZES, SPANS, AND CONNECTIONS BEFORE SUBMITTAL.",
+    ]
+    note_x = width + overhang + 6.0
+    cursor = depth - 2.0
+    _add_note_line(msp, "FRAMING NOTES", (note_x, cursor))
     cursor -= 1.6
     for line in notes:
         _add_note_line(msp, line, (note_x, cursor))

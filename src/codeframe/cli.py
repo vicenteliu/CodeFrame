@@ -13,6 +13,7 @@ from .dxf import (
     write_floor_plan,
     write_foundation_plan,
     write_general_notes,
+    write_roof_framing_plan,
     write_roof_plan,
     write_schedules,
     write_section,
@@ -124,6 +125,11 @@ def main(argv: list[str] | None = None) -> int:
         *(
             [("foundation_plan.dxf", write_foundation_plan)]
             if project.building.foundation is not None
+            else []
+        ),
+        *(
+            [("roof_framing_plan.dxf", write_roof_framing_plan)]
+            if project.building.roof.framing is not None
             else []
         ),
         ("drawing_set.pdf", write_sheet_set),

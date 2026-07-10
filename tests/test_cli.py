@@ -52,6 +52,7 @@ EXPECTED_OUTPUTS = (
     "section_a.dxf",
     "schedules.dxf",
     "foundation_plan.dxf",
+    "roof_framing_plan.dxf",
     "drawing_set.pdf",
 )
 

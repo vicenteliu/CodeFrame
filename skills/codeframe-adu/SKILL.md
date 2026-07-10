@@ -50,7 +50,8 @@ values back as a small table and get a confirmation before moving on.
    lines"); wall height; exterior wall thickness (offer the common values
    table in REFERENCE.md); roof: slope `N:12`, ridge direction, overhang;
    foundation (slab-on-grade footing size, hold-down points — see
-   REFERENCE.md) if the set should include sheet S1.
+   REFERENCE.md) if the set should include sheet S1; roof framing
+   (rafter/truss, size, spacing) if it should include sheet S2.
 3. **Openings** — per wall: doors (width, height, position along the wall,
    swing) and windows (width, height, sill, position). Confirm positions
    using the offset conventions in REFERENCE.md.

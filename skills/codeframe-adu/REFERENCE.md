@@ -99,6 +99,17 @@ coordinate (rear for a `y` ridge, right for an `x` ridge). Each cut adds a
 `section_<name>.dxf`, a sheet in the PDF, and a dashed, bubbled cut line
 on the floor plan. Gable roofs only (like the rest of the engine).
 
+## Roof framing (sheet S2)
+
+`roof.framing` is optional; when present, `generate` adds a roof framing
+plan (`roof_framing_plan.dxf`, PDF sheet S2.0). Fields: `member`
+("rafter" or "truss"), `size` (e.g. "2x8"), `spacing` in feet (2 = 24"
+o.c.), optional `species_grade` (e.g. "DF #2") and `ridge` (e.g. "2x10
+RIDGE BOARD"). Members are laid out along the ridge at the stated
+spacing; a truss variant swaps the rafter-tie note for a
+deferred-submittal note (stamped truss package, CRC R802.10.1). All
+member sizes are the Drafter's inputs — CodeFrame never sizes structure.
+
 ## Common wall thickness values
 
 | Construction                     | `exterior_wall_thickness` |
