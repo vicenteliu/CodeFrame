@@ -34,6 +34,12 @@
     { "type": "combo", "at": { "x": 10, "y": 12 } },
     { "type": "smoke", "at": { "x": 15, "y": 6 } }
   ],
+  "fixtures": [
+    { "type": "kitchen-sink", "at": { "x": 2.2, "y": 4 }, "rotation": 90 },
+    { "type": "counter", "at": { "x": 1.75, "y": 4 }, "rotation": 90,
+      "size": { "width": 6, "depth": 2 } },
+    { "type": "water-heater", "at": { "x": 18.2, "y": 22 } }
+  ],
   "sections": [
     { "name": "A", "at": 10 }
   ],

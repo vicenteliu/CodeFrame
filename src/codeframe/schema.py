@@ -163,6 +163,32 @@ class Detector(_Model):
     at: Point
 
 
+class Fixture(_Model):
+    """A plumbing fixture / appliance symbol at an explicit point.
+
+    `at` is the symbol's center; `rotation` spins it counterclockwise
+    (at 0 the fixture's back — tank, faucet, wall side — faces +y).
+    `size` is required for counters and forbidden elsewhere: every other
+    symbol has a standard footprint.
+    """
+
+    type: Literal[
+        "toilet", "lavatory", "bathtub", "shower", "kitchen-sink",
+        "range", "refrigerator", "washer-dryer", "water-heater", "counter",
+    ]
+    at: Point
+    rotation: Literal[0, 90, 180, 270] = 0
+    size: Footprint | None = None
+
+    @model_validator(mode="after")
+    def _counter_size(self) -> "Fixture":
+        if self.type == "counter" and self.size is None:
+            raise ValueError("counter requires an explicit size")
+        if self.type != "counter" and self.size is not None:
+            raise ValueError(f"{self.type} has a standard size; do not set one")
+        return self
+
+
 class SectionCut(_Model):
     """A transverse building section, cut perpendicular to the roof ridge.
 
@@ -186,6 +212,7 @@ class ProjectConfig(_Model):
     openings: list[Opening] = []
     rooms: list[Room] = []
     detectors: list[Detector] = []
+    fixtures: list[Fixture] = []
     sections: list[SectionCut] = []
     notes: list[str] = []
 
@@ -337,6 +364,14 @@ def _geometry_errors(project: ProjectConfig) -> list[str]:
             errors.append(
                 f"detectors[{index}]: {detector.type} alarm at ({detector.at.x}, "
                 f"{detector.at.y}) is outside the {footprint.width} x "
+                f"{footprint.depth} ft footprint"
+            )
+
+    for index, fixture in enumerate(project.fixtures):
+        if fixture.at.x > footprint.width or fixture.at.y > footprint.depth:
+            errors.append(
+                f"fixtures[{index}]: {fixture.type} at ({fixture.at.x}, "
+                f"{fixture.at.y}) is outside the {footprint.width} x "
                 f"{footprint.depth} ft footprint"
             )
 

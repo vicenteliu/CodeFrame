@@ -8,6 +8,7 @@ Configs produce byte-identical files.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import ezdxf
@@ -22,7 +23,7 @@ from .geometry import (
     subtract_intervals,
     wall_frame,
 )
-from .schema import ProjectConfig, Roof, SectionCut
+from .schema import Fixture, ProjectConfig, Roof, SectionCut
 
 
 class UnsupportedRoofError(ValueError):
@@ -45,6 +46,7 @@ FLOOR_LAYERS = {
     "A-DOOR": {"color": 4, "lineweight": 25},
     "A-GLAZ": {"color": 4, "lineweight": 25},
     "A-FIRE": {"color": 1, "lineweight": 25},
+    "A-FIXT": {"color": 8, "lineweight": 18},
     "A-ANNO-SECT": {"color": 6, "lineweight": 25, "linetype": "DASHED"},
     "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
     "A-ANNO-DIMS": {"color": 3, "lineweight": 13},
@@ -238,6 +240,98 @@ def _add_dim(msp, layer: str, p1: tuple[float, float], p2: tuple[float, float], 
         dxfattribs={"layer": layer},
     )
     dim.render()
+
+
+class _SymbolFrame:
+    """Draws fixture primitives in symbol-local coords (centered at the
+    origin, back toward +y) rotated CCW and translated onto the plan."""
+
+    def __init__(self, msp, at, rotation_degrees: int):
+        self.msp = msp
+        radians = math.radians(rotation_degrees)
+        self._cos, self._sin = math.cos(radians), math.sin(radians)
+        self._origin = (at.x, at.y)
+
+    def point(self, x: float, y: float) -> tuple[float, float]:
+        return (
+            self._origin[0] + x * self._cos - y * self._sin,
+            self._origin[1] + x * self._sin + y * self._cos,
+        )
+
+    def rect(self, cx: float, cy: float, w: float, d: float) -> None:
+        corners = [
+            self.point(cx - w / 2, cy - d / 2), self.point(cx + w / 2, cy - d / 2),
+            self.point(cx + w / 2, cy + d / 2), self.point(cx - w / 2, cy + d / 2),
+        ]
+        self.msp.add_lwpolyline(corners, close=True, dxfattribs={"layer": "A-FIXT"})
+
+    def line(self, x1: float, y1: float, x2: float, y2: float) -> None:
+        self.msp.add_line(
+            self.point(x1, y1), self.point(x2, y2), dxfattribs={"layer": "A-FIXT"}
+        )
+
+    def circle(self, cx: float, cy: float, radius: float) -> None:
+        self.msp.add_circle(
+            center=self.point(cx, cy), radius=radius, dxfattribs={"layer": "A-FIXT"}
+        )
+
+    def ellipse(self, cx: float, cy: float, rx: float, ry: float) -> None:
+        # DXF wants the major axis with ratio = minor/major <= 1.
+        if rx >= ry:
+            tip, ratio = (cx + rx, cy), ry / rx
+        else:
+            tip, ratio = (cx, cy + ry), rx / ry
+        center = self.point(cx, cy)
+        tip_point = self.point(*tip)
+        major = (tip_point[0] - center[0], tip_point[1] - center[1])
+        self.msp.add_ellipse(
+            center=center, major_axis=major, ratio=ratio,
+            dxfattribs={"layer": "A-FIXT"},
+        )
+
+    def label(self, text: str, cx: float = 0.0, cy: float = 0.0) -> None:
+        _add_label(self.msp, "A-FIXT", text, self.point(cx, cy))
+
+
+def _draw_fixture(msp, fixture: Fixture) -> None:
+    sym = _SymbolFrame(msp, fixture.at, fixture.rotation)
+    kind = fixture.type
+    if kind == "toilet":
+        sym.rect(0, 0.79, 1.5, 0.75)                # tank against the wall
+        sym.ellipse(0, -0.29, 0.58, 0.83)           # bowl
+    elif kind == "lavatory":
+        sym.ellipse(0, 0, 0.8, 0.65)
+    elif kind == "bathtub":
+        sym.rect(0, 0, 5.0, 2.5)
+        sym.rect(0, 0, 4.5, 2.0)
+        sym.circle(-1.85, 0, 0.15)                  # drain
+    elif kind == "shower":
+        sym.rect(0, 0, 3.0, 3.0)
+        sym.line(-1.5, -1.5, 1.5, 1.5)
+        sym.line(-1.5, 1.5, 1.5, -1.5)
+    elif kind == "kitchen-sink":
+        sym.rect(0, 0, 2.75, 1.83)
+        sym.rect(-0.65, 0, 1.05, 1.33)
+        sym.rect(0.65, 0, 1.05, 1.33)
+    elif kind == "range":
+        sym.rect(0, 0, 2.5, 2.17)
+        for bx in (-0.62, 0.62):
+            for by in (-0.54, 0.54):
+                sym.circle(bx, by, 0.29)
+    elif kind == "refrigerator":
+        sym.rect(0, 0, 3.0, 2.5)
+        sym.label("REF")
+    elif kind == "washer-dryer":
+        sym.rect(-1.125, 0, 2.25, 2.25)
+        sym.rect(1.125, 0, 2.25, 2.25)
+        sym.label("W", -1.125, 0)
+        sym.label("D", 1.125, 0)
+    elif kind == "water-heater":
+        sym.circle(0, 0, 1.0)
+        sym.label("WH")
+    elif kind == "counter":
+        assert fixture.size is not None
+        sym.rect(0, 0, fixture.size.width, fixture.size.depth)
 
 
 def _add_tag(msp, mark: str, at: tuple[float, float]) -> None:
@@ -481,6 +575,9 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                 msp, "A-ANNO-TEXT", f"{room.area:g} SF",
                 (room.label_at.x, room.label_at.y - 1.0),
             )
+
+    for fixture in project.fixtures:
+        _draw_fixture(msp, fixture)
 
     for detector in project.detectors:
         at = (detector.at.x, detector.at.y)

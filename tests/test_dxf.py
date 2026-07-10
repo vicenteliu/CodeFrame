@@ -299,6 +299,48 @@ def test_floor_plan_draws_detector_symbols(demo_project, tmp_path):
     assert fire_texts == {"S/CO", "S"}
 
 
+def test_floor_plan_draws_fixture_symbols(demo_project, tmp_path):
+    out_path = tmp_path / "floor_plan.dxf"
+    write_floor_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    # Kitchen sink (3 rects) + counter (1 rect) on the fixture layer, and
+    # the water heater's WH circle and label.
+    assert len(msp.query("LWPOLYLINE[layer=='A-FIXT']")) == 4
+    assert len(msp.query("CIRCLE[layer=='A-FIXT']")) == 1
+    fixture_texts = {text.dxf.text for text in msp.query("TEXT[layer=='A-FIXT']")}
+    assert fixture_texts == {"WH"}
+
+
+def test_every_fixture_type_renders_and_audits(tmp_path):
+    import json
+
+    data = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
+    data["fixtures"] = [
+        {"type": "toilet", "at": {"x": 2, "y": 2}},
+        {"type": "lavatory", "at": {"x": 5, "y": 2}, "rotation": 90},
+        {"type": "bathtub", "at": {"x": 10, "y": 2}, "rotation": 180},
+        {"type": "shower", "at": {"x": 16, "y": 2}, "rotation": 270},
+        {"type": "kitchen-sink", "at": {"x": 2, "y": 8}},
+        {"type": "range", "at": {"x": 6, "y": 8}},
+        {"type": "refrigerator", "at": {"x": 10, "y": 8}},
+        {"type": "washer-dryer", "at": {"x": 15, "y": 8}},
+        {"type": "water-heater", "at": {"x": 2, "y": 13}},
+        {"type": "counter", "at": {"x": 8, "y": 13},
+         "size": {"width": 8, "depth": 2}},
+    ]
+    config_path = tmp_path / "fixtures.json"
+    config_path.write_text(json.dumps(data), encoding="utf-8")
+    project = load_project_config(config_path)
+
+    out_path = tmp_path / "floor_plan.dxf"
+    write_floor_plan(project, out_path)
+
+    doc = ezdxf.readfile(out_path)
+    assert len(doc.modelspace().query("*[layer=='A-FIXT']")) >= 25
+    assert not doc.audit().has_errors
+
+
 def test_section_shows_cut_walls_and_roof_profile(demo_project, tmp_path):
     out_path = tmp_path / "section_a.dxf"
     write_section(demo_project, demo_project.sections[0], out_path)

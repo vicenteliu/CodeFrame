@@ -121,6 +121,20 @@ and the core rejects geometry that can never satisfy CRC R310 (sill over
 5.7 sq ft). Net clear opening depends on the window type — the Drafter
 still verifies it.
 
+## Fixtures
+
+`fixtures` is a top-level list of plumbing/appliance symbols:
+`{"type": ..., "at": {x, y}, "rotation": 0|90|180|270}`. `at` is the
+symbol's CENTER; at rotation 0 the fixture's back (tank, faucet, wall
+side) faces +y, and rotation spins it counterclockwise — so a toilet
+against the rear wall is rotation 0, against the left wall 90. Types and
+standard footprints (ft): toilet 1.5x2.33, lavatory 1.6x1.3, bathtub
+5x2.5, shower 3x3, kitchen-sink 2.75x1.83, range 2.5x2.17, refrigerator
+3x2.5, washer-dryer 4.5x2.25, water-heater d=2. `counter` instead
+requires an explicit `size: {width, depth}`. Place them clear of walls —
+CodeFrame draws exactly where the config says and checks only that the
+center is inside the footprint.
+
 ## Detectors
 
 `detectors` is a top-level list of smoke/CO alarms at explicit

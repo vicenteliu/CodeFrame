@@ -235,6 +235,27 @@ def test_egress_window_needs_5_7_sq_ft_gross(tmp_path):
     assert "5.7 sq ft" in message
 
 
+def test_counter_requires_size_and_others_reject_it(tmp_path):
+    message = error_from_mutated_demo(
+        tmp_path, lambda data: data["fixtures"][1].pop("size")
+    )
+    assert "counter requires an explicit size" in message
+
+    message = error_from_mutated_demo(
+        tmp_path,
+        lambda data: data["fixtures"][0].update(size={"width": 2, "depth": 2}),
+    )
+    assert "standard size" in message
+
+
+def test_fixture_must_sit_inside_footprint(tmp_path):
+    message = error_from_mutated_demo(
+        tmp_path, lambda data: data["fixtures"][0]["at"].update(x=21)
+    )
+    assert "fixtures[0]" in message
+    assert "outside" in message
+
+
 def test_detector_must_sit_inside_footprint(tmp_path):
     message = error_from_mutated_demo(
         tmp_path,

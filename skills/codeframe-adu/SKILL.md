@@ -54,8 +54,9 @@ values back as a small table and get a confirmation before moving on.
    using the offset conventions in REFERENCE.md.
 4. **Interior walls & rooms** — wall segments (axis, offset, span,
    thickness), their doors (position, width, height, swing — see
-   REFERENCE.md), a label point (and stated area) for each room, and
-   smoke/CO detector points.
+   REFERENCE.md), a label point (and stated area) for each room,
+   smoke/CO detector points, and fixture symbols (bath, kitchen,
+   laundry — types and footprints in REFERENCE.md).
 
 ### 2. Write and validate the config
 
