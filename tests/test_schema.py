@@ -201,6 +201,13 @@ def test_slope_must_be_rise_over_twelve(tmp_path):
     assert "4:12" in message
 
 
+def test_every_example_config_validates():
+    examples = sorted(DEMO_CONFIG.parent.glob("*.json"))
+    assert len(examples) >= 4
+    for config_path in examples:
+        load_project_config(config_path)
+
+
 def test_file_that_is_not_json_reports_json_error(tmp_path):
     config_path = tmp_path / "config.json"
     config_path.write_text("not json {{", encoding="utf-8")
