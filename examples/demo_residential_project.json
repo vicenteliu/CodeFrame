@@ -6,6 +6,7 @@
   "units": "feet",
   "site": {
     "lot": { "width": 50, "depth": 120 },
+    "north_rotation": 0,
     "setbacks": { "front": 20, "rear": 10, "left": 5, "right": 5 },
     "existing_structures": [
       { "label": "Existing Dwelling", "x": 10, "y": 25, "width": 30, "depth": 40 }

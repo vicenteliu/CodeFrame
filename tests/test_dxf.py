@@ -11,6 +11,7 @@ from codeframe.dxf import (
     format_feet_inches,
     write_elevation,
     write_floor_plan,
+    write_general_notes,
     write_roof_plan,
     write_schedules,
     write_section,
@@ -34,6 +35,7 @@ PLAN_WRITERS = [
         "section_a",
         lambda project, path: write_section(project, project.sections[0], path),
     ),
+    ("general_notes", write_general_notes),
 ]
 
 # Demo roof: gable 4:12 over a 20 ft span, 1 ft overhang, 9 ft walls.
@@ -77,6 +79,38 @@ def test_site_plan_draws_lot_setbacks_and_buildings(demo_project, tmp_path):
 
     setback_dims = msp.query("DIMENSION")
     assert len(setback_dims) == 4
+
+
+def test_site_plan_has_north_arrow_and_scale_bar(demo_project, tmp_path):
+    out_path = tmp_path / "site_plan.dxf"
+    write_site_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = {text.dxf.text for text in msp.query("TEXT")}
+    assert {"N", "GRAPHIC SCALE (FEET)", "0", "10", "20", "40"} <= labels
+    # North arrow circle sits beside the lot.
+    circles = msp.query("CIRCLE[layer=='C-ANNO-TEXT']")
+    assert len(circles) == 1
+    center = circles[0].dxf.center
+    assert (round(center.x, 6), round(center.y, 6)) == (56, 115)
+
+
+def test_general_notes_carry_code_refs_and_project_data(demo_project, tmp_path):
+    out_path = tmp_path / "general_notes.dxf"
+    write_general_notes(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    lines = [text.dxf.text for text in msp.query("TEXT")]
+
+    assert "GENERAL NOTES" in lines
+    assert "PROJECT DATA" in lines
+    assert "PROJECT NOTES" in lines
+    joined = "\n".join(lines)
+    assert "CALIFORNIA RESIDENTIAL CODE" in joined
+    assert "LOT: 50 x 120 FT (6000 SF)" in joined
+    assert "BUILDING FOOTPRINT: 20 x 24 FT (480 SF)" in joined
+    assert "LOT COVERAGE: 8.0%" in joined
+    assert "ROOF: GABLE 4:12, 1 FT OVERHANG" in joined
 
 
 def test_site_plan_is_deterministic(demo_project, tmp_path):

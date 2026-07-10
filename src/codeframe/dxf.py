@@ -388,6 +388,10 @@ def build_site_plan(project: ProjectConfig) -> Drawing:
         (position.x + footprint.width / 2, position.y + footprint.depth / 2),
     )
 
+    if project.site.north_rotation is not None:
+        _draw_north_arrow(msp, project.site.north_rotation, lot)
+    _draw_scale_bar(msp)
+
     # Placement dimensions: building face to each lot line, what plan
     # checkers read setbacks from. Measured at the building's right and
     # front faces so the dimension lines sit in clear corridors beside it.
@@ -413,6 +417,43 @@ def build_site_plan(project: ProjectConfig) -> Drawing:
     )
 
     return doc
+
+
+def _draw_north_arrow(msp, north_rotation: float, lot) -> None:
+    """North arrow beside the lot: circle, shaft, arrowhead, N label."""
+
+    radians = math.radians(north_rotation)
+    direction = (-math.sin(radians), math.cos(radians))
+    center = (lot.width + 6.0, lot.depth - 5.0)
+    radius = 2.0
+
+    def along(scale: float) -> tuple[float, float]:
+        return (center[0] + direction[0] * scale, center[1] + direction[1] * scale)
+
+    msp.add_circle(center=center, radius=radius, dxfattribs={"layer": "C-ANNO-TEXT"})
+    tip = along(radius)
+    msp.add_line(along(-radius), tip, dxfattribs={"layer": "C-ANNO-TEXT"})
+    for wing in (140, -140):
+        wing_radians = math.radians(north_rotation + wing)
+        wing_end = (
+            tip[0] - math.sin(wing_radians) * 0.8,
+            tip[1] + math.cos(wing_radians) * 0.8,
+        )
+        msp.add_line(tip, wing_end, dxfattribs={"layer": "C-ANNO-TEXT"})
+    _add_label(msp, "C-ANNO-TEXT", "N", along(radius + 1.2))
+
+
+def _draw_scale_bar(msp) -> None:
+    """Graphic scale bar below the lot; stays true at any print scale."""
+
+    y = -4.0
+    msp.add_line((0, y), (40, y), dxfattribs={"layer": "C-ANNO-TEXT"})
+    for station in (0, 10, 20, 40):
+        msp.add_line(
+            (station, y), (station, y + 0.8), dxfattribs={"layer": "C-ANNO-TEXT"}
+        )
+        _add_label(msp, "C-ANNO-TEXT", str(station), (station, y - 1.2))
+    _add_label(msp, "C-ANNO-TEXT", "GRAPHIC SCALE (FEET)", (20, y - 2.8))
 
 
 def _draw_door(msp, frame, s_start: float, width: float, swing: str, wall_thickness: float) -> None:
@@ -727,6 +768,90 @@ def build_elevation(project: ProjectConfig, wall: str) -> Drawing:
         msp, "A-ANNO-DIMS", (0, 0), (0, ridge_z),
         angle=90, base=(-overhang - 3, 0),
     )
+
+    return doc
+
+
+GENERAL_NOTES: list[list[str]] = [
+    ["ALL WORK SHALL COMPLY WITH THE CALIFORNIA RESIDENTIAL CODE (CRC), CBC,",
+     "CEC, CMC, CPC, CALIFORNIA ENERGY CODE (TITLE 24 PART 6), AND CALGREEN AS",
+     "AMENDED BY THE LOCAL JURISDICTION. VERIFY THE ENFORCED CODE CYCLE",
+     "BEFORE SUBMITTAL."],
+    ["WRITTEN DIMENSIONS GOVERN OVER SCALED DIMENSIONS."],
+    ["VERIFY ALL DIMENSIONS AND SITE CONDITIONS BEFORE CONSTRUCTION."],
+    ["SMOKE ALARMS PER CRC R314; CARBON MONOXIDE ALARMS PER CRC R315."],
+    ["EMERGENCY ESCAPE AND RESCUE OPENINGS PER CRC R310."],
+    ["CONTRACTOR SHALL VERIFY ALL UTILITY LOCATIONS BEFORE EXCAVATION."],
+    ["THIS SET IS A PRELIMINARY DRAWING SKELETON. A QUALIFIED PROFESSIONAL",
+     "MUST REVIEW, COMPLETE, AND APPROVE EVERY SHEET BEFORE ANY PERMIT",
+     "SUBMITTAL."],
+]
+
+NOTES_LAYERS = {
+    "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
+}
+
+_NOTE_LINE_SPACING = 1.2
+
+
+def write_general_notes(project: ProjectConfig, path: Path) -> None:
+    """Write the general notes and project data DXF."""
+
+    _save(build_general_notes(project), path)
+
+
+def _add_note_line(msp, text: str, at: tuple[float, float]) -> None:
+    msp.add_text(
+        text, dxfattribs={"layer": "A-ANNO-TEXT", "height": TEXT_HEIGHT}
+    ).set_placement(at, align=TextEntityAlignment.MIDDLE_LEFT)
+
+
+def build_general_notes(project: ProjectConfig) -> Drawing:
+    doc = _new_document(NOTES_LAYERS)
+    msp = doc.modelspace()
+
+    lot = project.site.lot
+    footprint = project.building.footprint
+    lot_area = lot.width * lot.depth
+    footprint_area = footprint.width * footprint.depth
+    roof = project.building.roof
+
+    cursor = 0.0
+
+    def emit(text: str, indent: float = 0.0) -> None:
+        nonlocal cursor
+        _add_note_line(msp, text, (indent, cursor))
+        cursor -= _NOTE_LINE_SPACING
+
+    emit("GENERAL NOTES")
+    cursor -= 0.4
+    for number, note_lines in enumerate(GENERAL_NOTES, start=1):
+        emit(f"{number}. {note_lines[0]}", indent=1.0)
+        for continuation in note_lines[1:]:
+            emit(continuation, indent=2.0)
+
+    cursor -= 1.2
+    emit("PROJECT DATA")
+    cursor -= 0.4
+    for line in (
+        f"PROJECT: {project.name.upper()}",
+        f"LOCATION: {project.location.upper()}",
+        f"LOT: {lot.width:g} x {lot.depth:g} FT ({lot_area:g} SF)",
+        f"BUILDING FOOTPRINT: {footprint.width:g} x {footprint.depth:g} FT "
+        f"({footprint_area:g} SF)",
+        f"LOT COVERAGE: {100 * footprint_area / lot_area:.1f}%",
+        f"WALL HEIGHT: {format_feet_inches(project.building.wall_height)}",
+        f"ROOF: {roof.type.upper()} {roof.slope}, {roof.overhang:g} FT OVERHANG",
+        "OCCUPANCY / CONSTRUCTION TYPE: BY DRAFTER",
+    ):
+        emit(line, indent=1.0)
+
+    if project.notes:
+        cursor -= 1.2
+        emit("PROJECT NOTES")
+        cursor -= 0.4
+        for number, note in enumerate(project.notes, start=1):
+            emit(f"{number}. {note.upper()}", indent=1.0)
 
     return doc
 

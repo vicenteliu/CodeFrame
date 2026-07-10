@@ -11,6 +11,7 @@ from .dxf import (
     UnsupportedRoofError,
     write_elevation,
     write_floor_plan,
+    write_general_notes,
     write_roof_plan,
     write_schedules,
     write_section,
@@ -98,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     writers = [
+        ("general_notes.dxf", write_general_notes),
         ("site_plan.dxf", write_site_plan),
         ("floor_plan.dxf", write_floor_plan),
         ("roof_plan.dxf", write_roof_plan),

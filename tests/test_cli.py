@@ -41,6 +41,7 @@ def test_validate_missing_file_reports_cleanly(tmp_path, capsys):
 
 
 EXPECTED_OUTPUTS = (
+    "general_notes.dxf",
     "site_plan.dxf",
     "floor_plan.dxf",
     "roof_plan.dxf",

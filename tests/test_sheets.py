@@ -27,9 +27,9 @@ def sheet_set(demo_project, tmp_path):
     return out_path
 
 
-def test_sheet_set_has_six_arch_d_pages(sheet_set):
+def test_sheet_set_has_seven_arch_d_pages(sheet_set):
     reader = PdfReader(sheet_set)
-    assert len(reader.pages) == 6
+    assert len(reader.pages) == 7
     for page in reader.pages:
         box = page.mediabox
         assert (float(box.width), float(box.height)) == ARCH_D_LANDSCAPE_POINTS
@@ -41,9 +41,9 @@ def test_sheets_carry_titles_numbers_and_stamp(sheet_set):
 
     for text, title, number in zip(
         texts,
-        ("SITE PLAN", "FLOOR PLAN", "ELEVATIONS", "ROOF PLAN", "SCHEDULES",
-         "SECTION A-A"),
-        ("A1.0", "A2.0", "A3.0", "A4.0", "A5.0", "A6.0"),
+        ("GENERAL NOTES", "SITE PLAN", "FLOOR PLAN", "ELEVATIONS", "ROOF PLAN",
+         "SCHEDULES", "SECTION A-A"),
+        ("A0.1", "A1.0", "A2.0", "A3.0", "A4.0", "A5.0", "A6.0"),
     ):
         assert title in text
         assert number in text

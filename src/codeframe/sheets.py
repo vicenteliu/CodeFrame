@@ -24,6 +24,7 @@ from matplotlib.patches import Rectangle
 from .dxf import (
     build_elevation,
     build_floor_plan,
+    build_general_notes,
     build_roof_plan,
     build_schedules,
     build_section,
@@ -182,6 +183,10 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
     }
     with mpl.rc_context({"pdf.fonttype": 42}):
         with PdfPages(path, metadata=metadata) as pdf:
+            single_doc_page(
+                pdf, build_general_notes(project), "GENERAL NOTES", "A0.1",
+                ARCHITECTURAL_SCALES,
+            )
             single_doc_page(pdf, site, "SITE PLAN", "A1.0", ENGINEERING_SCALES)
             single_doc_page(pdf, floor, "FLOOR PLAN", "A2.0", ARCHITECTURAL_SCALES)
 

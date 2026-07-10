@@ -35,6 +35,8 @@ side), x runs right across the lot width, y runs toward the rear.
 
 - `site.existing_structures[].x/y` and `building.position` place each
   structure's own front-left corner in lot coordinates.
+- `site.north_rotation` (degrees counterclockwise from plan-up) orients the
+  site plan's north arrow. Ask the Drafter; without it no arrow is drawn.
 - Building-local coordinates (interior walls, room label points) use the
   same axes with the origin at the footprint's front-left corner.
 - The core rejects anything that doesn't fit inside the lot or footprint.

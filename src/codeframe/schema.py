@@ -68,6 +68,9 @@ class Site(_Model):
     lot: Lot
     setbacks: Setbacks
     existing_structures: list[ExistingStructure] = []
+    # Degrees counterclockwise from plan-up (+y). Stated by the Drafter;
+    # without it the site plan draws no north arrow.
+    north_rotation: float | None = None
 
 
 class Point(_Model):
