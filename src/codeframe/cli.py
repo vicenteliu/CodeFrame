@@ -11,6 +11,7 @@ from .dxf import (
     UnsupportedRoofError,
     write_elevation,
     write_floor_plan,
+    write_foundation_plan,
     write_general_notes,
     write_roof_plan,
     write_schedules,
@@ -120,6 +121,11 @@ def main(argv: list[str] | None = None) -> int:
             for section in project.sections
         ],
         ("schedules.dxf", write_schedules),
+        *(
+            [("foundation_plan.dxf", write_foundation_plan)]
+            if project.building.foundation is not None
+            else []
+        ),
         ("drawing_set.pdf", write_sheet_set),
     ]
     if freecadcmd_available():

@@ -24,6 +24,7 @@ from matplotlib.patches import Rectangle
 from .dxf import (
     build_elevation,
     build_floor_plan,
+    build_foundation_plan,
     build_general_notes,
     build_roof_plan,
     build_schedules,
@@ -225,4 +226,9 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
                     f"SECTION {section.name}-{section.name}",
                     f"A6.{index}",
                     ARCHITECTURAL_SCALES,
+                )
+            if project.building.foundation is not None:
+                single_doc_page(
+                    pdf, build_foundation_plan(project), "FOUNDATION PLAN",
+                    "S1.0", ARCHITECTURAL_SCALES,
                 )

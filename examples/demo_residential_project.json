@@ -17,7 +17,18 @@
     "footprint": { "width": 20, "depth": 24 },
     "wall_height": 9,
     "exterior_wall_thickness": 0.5,
-    "roof": { "type": "gable", "slope": "4:12", "ridge_axis": "y", "overhang": 1 }
+    "roof": { "type": "gable", "slope": "4:12", "ridge_axis": "y", "overhang": 1 },
+    "foundation": {
+      "type": "slab-on-grade",
+      "footing_width": 1,
+      "footing_depth": 1,
+      "hold_downs": [
+        { "at": { "x": 0.75, "y": 0.75 }, "label": "HD1" },
+        { "at": { "x": 19.25, "y": 0.75 }, "label": "HD1" },
+        { "at": { "x": 0.75, "y": 23.25 }, "label": "HD1" },
+        { "at": { "x": 19.25, "y": 23.25 }, "label": "HD1" }
+      ]
+    }
   },
   "interior_walls": [
     { "axis": "x", "offset": 18, "from": 0, "to": 20, "thickness": 0.375,

@@ -83,6 +83,13 @@ SCHEDULE_LAYERS = {
     "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
 }
 
+FOUNDATION_LAYERS = {
+    "S-FNDN": {"color": 7, "lineweight": 35},
+    "S-FNDN-FTNG": {"color": 8, "lineweight": 25, "linetype": "DASHED"},
+    "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
+    "A-ANNO-DIMS": {"color": 3, "lineweight": 13},
+}
+
 
 def format_feet_inches(feet: float) -> str:
     """Format decimal feet as a feet-inches dimension string (6.67 -> 6'-8")."""
@@ -768,6 +775,109 @@ def build_elevation(project: ProjectConfig, wall: str) -> Drawing:
         msp, "A-ANNO-DIMS", (0, 0), (0, ridge_z),
         angle=90, base=(-overhang - 3, 0),
     )
+
+    return doc
+
+
+def write_foundation_plan(project: ProjectConfig, path: Path) -> None:
+    """Write the slab-on-grade foundation plan DXF (sheet S1)."""
+
+    _save(build_foundation_plan(project), path)
+
+
+def build_foundation_plan(project: ProjectConfig) -> Drawing:
+    building = project.building
+    foundation = building.foundation
+    assert foundation is not None, "caller checks building.foundation"
+
+    doc = _new_document(FOUNDATION_LAYERS)
+    msp = doc.modelspace()
+
+    footprint = building.footprint
+    width, depth = footprint.width, footprint.depth
+    thickness = building.exterior_wall_thickness
+    half_footing = foundation.footing_width / 2
+
+    # Building outline at the exterior face; continuous perimeter footing
+    # centered under the walls, hidden-line convention.
+    _add_rectangle(msp, "S-FNDN", 0, 0, width, depth)
+    outer = thickness / 2 - half_footing  # negative: projects past the face
+    inner = thickness / 2 + half_footing
+    _add_rectangle(
+        msp, "S-FNDN-FTNG", outer, outer, width - 2 * outer, depth - 2 * outer
+    )
+    _add_rectangle(
+        msp, "S-FNDN-FTNG", inner, inner, width - 2 * inner, depth - 2 * inner
+    )
+
+    # Interior bearing walls get a footing band along their clipped extent.
+    for wall in project.interior_walls:
+        if not wall.bearing:
+            continue
+        along = width if wall.axis == "x" else depth
+        lo = max(wall.from_, thickness)
+        hi = min(wall.to, along - thickness)
+        if hi <= lo:
+            continue
+        if wall.axis == "x":
+            _add_rectangle(
+                msp, "S-FNDN-FTNG",
+                lo, wall.offset - half_footing, hi - lo, foundation.footing_width,
+            )
+        else:
+            _add_rectangle(
+                msp, "S-FNDN-FTNG",
+                wall.offset - half_footing, lo, foundation.footing_width, hi - lo,
+            )
+        _add_label(
+            msp, "A-ANNO-TEXT", "BEARING WALL FOOTING",
+            ((lo + hi) / 2, wall.offset + 1.2) if wall.axis == "x"
+            else (wall.offset + 1.2, (lo + hi) / 2),
+        )
+
+    # Hold-downs: solid triangle symbol plus the stated label.
+    for hold_down in foundation.hold_downs:
+        x, y = hold_down.at.x, hold_down.at.y
+        msp.add_lwpolyline(
+            [(x, y + 0.5), (x - 0.45, y - 0.35), (x + 0.45, y - 0.35)],
+            close=True, dxfattribs={"layer": "S-FNDN"},
+        )
+        _add_label(msp, "A-ANNO-TEXT", hold_down.label, (x, y + 1.3))
+
+    _add_dim(
+        msp, "A-ANNO-DIMS", (0, 0), (width, 0), angle=0, base=(0, -3),
+    )
+    _add_dim(
+        msp, "A-ANNO-DIMS", (0, 0), (0, depth), angle=90, base=(-3, 0),
+    )
+    _add_label(msp, "A-ANNO-TEXT", "FOUNDATION PLAN", (width / 2, -5.5))
+
+    # Notes block beside the plan.
+    notes = [
+        "CONCRETE: MIN 2,500 PSI AT 28 DAYS (CRC R402.2).",
+        f"CONTINUOUS FOOTING: {format_feet_inches(foundation.footing_width)} WIDE "
+        f"x {format_feet_inches(foundation.footing_depth)} DEEP MIN, BOTTOM 12 IN",
+        "MIN BELOW UNDISTURBED GRADE (CRC R403.1.4). REINF: (1) #4 TOP,",
+        "(1) #4 BOTTOM (CRC R403.1.3, SDC D0-D2).",
+        f"SLAB: {foundation.slab_thickness_inches:g} IN CONCRETE SLAB (CRC R506.1) "
+        f"OVER {foundation.vapor_retarder_mil}-MIL VAPOR RETARDER",
+        "(ASTM E1745 CLASS A, CRC R506.2.3 AS LOCALLY AMENDED) OVER 4 IN BASE.",
+        "ANCHOR BOLTS: 1/2 IN DIA AT 6'-0\" O.C. MAX, 7 IN MIN EMBEDMENT, MIN 2",
+        "PER PLATE SECTION, ONE WITHIN 12 IN OF EACH PLATE END (CRC R403.1.6);",
+        "3x3x0.229 IN PLATE WASHERS AT BRACED WALL LINES (CRC R602.11.1).",
+        "HOLD-DOWNS PER PLAN; SIZE, MODEL, AND EMBEDMENT BY DRAFTER, KEYED",
+        "TO THE BRACED WALL SCHEDULE.",
+        "SOIL: 1,500 PSF ASSUMED BEARING; VERIFY. SOILS REPORT WHERE REQUIRED.",
+        "PRELIMINARY SKELETON: A QUALIFIED PROFESSIONAL MUST VERIFY ALL",
+        "FOUNDATION SIZES, REINFORCING, AND HARDWARE BEFORE SUBMITTAL.",
+    ]
+    note_x = width + 6.0
+    cursor = depth - 2.0
+    _add_note_line(msp, "FOUNDATION NOTES", (note_x, cursor))
+    cursor -= 1.6
+    for line in notes:
+        _add_note_line(msp, line, (note_x, cursor))
+        cursor -= 1.2
 
     return doc
 

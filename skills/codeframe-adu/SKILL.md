@@ -48,7 +48,9 @@ values back as a small table and get a confirmation before moving on.
 2. **Building** — footprint width × depth; position on the lot (compute it
    when the Drafter says things like "5 ft off the rear and right lot
    lines"); wall height; exterior wall thickness (offer the common values
-   table in REFERENCE.md); roof: slope `N:12`, ridge direction, overhang.
+   table in REFERENCE.md); roof: slope `N:12`, ridge direction, overhang;
+   foundation (slab-on-grade footing size, hold-down points — see
+   REFERENCE.md) if the set should include sheet S1.
 3. **Openings** — per wall: doors (width, height, position along the wall,
    swing) and windows (width, height, sill, position). Confirm positions
    using the offset conventions in REFERENCE.md.

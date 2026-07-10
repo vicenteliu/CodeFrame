@@ -11,6 +11,7 @@ from codeframe.dxf import (
     format_feet_inches,
     write_elevation,
     write_floor_plan,
+    write_foundation_plan,
     write_general_notes,
     write_roof_plan,
     write_schedules,
@@ -36,6 +37,7 @@ PLAN_WRITERS = [
         lambda project, path: write_section(project, project.sections[0], path),
     ),
     ("general_notes", write_general_notes),
+    ("foundation_plan", write_foundation_plan),
 ]
 
 # Demo roof: gable 4:12 over a 20 ft span, 1 ft overhang, 9 ft walls.
@@ -408,6 +410,63 @@ def test_floor_plan_marks_section_cut_line(demo_project, tmp_path):
     assert len(bubbles) == 2
     names = [text.dxf.text for text in msp.query("TEXT[layer=='A-ANNO-SECT']")]
     assert names == ["A", "A"]
+
+
+def test_foundation_plan_footings_hold_downs_and_notes(demo_project, tmp_path):
+    out_path = tmp_path / "foundation_plan.dxf"
+    write_foundation_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+
+    # Building outline at the exterior face.
+    outline = msp.query("LWPOLYLINE[layer=='S-FNDN']")
+    assert rectangle_corners(outline[0]) == {(0, 0), (20, 0), (20, 24), (0, 24)}
+
+    # 12 in footing centered under the 6 in wall: edges 0.25 ft outside and
+    # 0.75 ft inside the face.
+    footings = msp.query("LWPOLYLINE[layer=='S-FNDN-FTNG']")
+    assert len(footings) == 2
+    assert rectangle_corners(footings[0]) == {
+        (-0.25, -0.25), (20.25, -0.25), (20.25, 24.25), (-0.25, 24.25),
+    }
+    assert rectangle_corners(footings[1]) == {
+        (0.75, 0.75), (19.25, 0.75), (19.25, 23.25), (0.75, 23.25),
+    }
+
+    # Four labeled hold-down triangles (outline query includes them).
+    assert len(outline) == 1 + 4
+    labels = [text.dxf.text for text in msp.query("TEXT")]
+    assert labels.count("HD1") == 4
+    joined = "\n".join(labels)
+    assert "FOUNDATION NOTES" in joined
+    assert "CONTINUOUS FOOTING: 1'-0\" WIDE x 1'-0\" DEEP MIN" in joined
+    assert "6'-0\" O.C. MAX" in joined
+    assert "10-MIL VAPOR RETARDER" in joined
+    assert "FOUNDATION PLAN" in joined
+    assert len(msp.query("DIMENSION")) == 2
+
+
+def test_foundation_plan_draws_bearing_wall_footing(tmp_path):
+    import json
+
+    data = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
+    data["interior_walls"][0]["bearing"] = True
+    config_path = tmp_path / "bearing.json"
+    config_path.write_text(json.dumps(data), encoding="utf-8")
+    project = load_project_config(config_path)
+
+    out_path = tmp_path / "foundation_plan.dxf"
+    write_foundation_plan(project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    footings = [
+        rectangle_corners(entity)
+        for entity in msp.query("LWPOLYLINE[layer=='S-FNDN-FTNG']")
+    ]
+    # Interior wall at y=18 from x=0.5 to 19.5 gets a 1 ft wide footing band.
+    assert {(0.5, 17.5), (19.5, 17.5), (19.5, 18.5), (0.5, 18.5)} in footings
+    labels = {text.dxf.text for text in msp.query("TEXT")}
+    assert "BEARING WALL FOOTING" in labels
 
 
 def test_unsupported_roof_type_raises_clear_error(tmp_path):

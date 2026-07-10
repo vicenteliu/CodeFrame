@@ -123,6 +123,19 @@ and the core rejects geometry that can never satisfy CRC R310 (sill over
 5.7 sq ft). Net clear opening depends on the window type — the Drafter
 still verifies it.
 
+## Foundation (sheet S1)
+
+`building.foundation` is optional; when present, `generate` adds a
+slab-on-grade foundation plan (`foundation_plan.dxf`, PDF sheet S1.0).
+`footing_width`/`footing_depth` in feet (typical 1.0 x 1.0; the footing is
+drawn centered under the exterior walls). `slab_thickness_inches`
+(default 3.5) and `vapor_retarder_mil` (default 10 per 2022 CRC R506.2.3;
+ask which jurisdiction — LADBS writes 6-mil, Redding 15-mil) feed the
+notes. `hold_downs` are explicit labeled points ({at, label} — e.g. HD1 at
+braced-wall ends); sizes/models stay the drafter's. Mark load-carrying
+interior walls `"bearing": true` to draw their footing band. CodeFrame
+never sizes structure — all values are the Drafter's inputs.
+
 ## Fixtures
 
 `fixtures` is a top-level list of plumbing/appliance symbols:

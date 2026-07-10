@@ -108,12 +108,39 @@ class Roof(_Model):
         return self
 
 
+class HoldDown(_Model):
+    """A hold-down anchor at an explicit point, keyed by its stated label."""
+
+    at: Point
+    label: str
+
+
+class Foundation(_Model):
+    """Slab-on-grade foundation parameters.
+
+    `footing_width` (feet) is drawn — the continuous footing is centered
+    under the exterior walls. Depth, slab thickness, and vapor retarder
+    feed the notes block; the vapor retarder is a jurisdiction parameter
+    (2022 CRC R506.2.3 says 10-mil, LADBS still writes 6, Redding 15).
+    Hold-down sizes/models are the drafter's; CodeFrame only places and
+    labels them.
+    """
+
+    type: Literal["slab-on-grade"]
+    footing_width: PositiveFeet
+    footing_depth: PositiveFeet
+    slab_thickness_inches: float = 3.5
+    vapor_retarder_mil: int = 10
+    hold_downs: list[HoldDown] = []
+
+
 class Building(_Model):
     position: Point
     footprint: Footprint
     wall_height: PositiveFeet
     exterior_wall_thickness: PositiveFeet
     roof: Roof
+    foundation: Foundation | None = None
 
 
 class InteriorDoor(_Model):
@@ -138,6 +165,8 @@ class InteriorWall(_Model):
     from_: NonNegativeFeet = Field(alias="from")
     to: NonNegativeFeet
     thickness: PositiveFeet
+    # Bearing walls get a continuous footing on the foundation plan.
+    bearing: bool = False
     doors: list[InteriorDoor] = []
 
 
@@ -369,6 +398,19 @@ def _geometry_errors(project: ProjectConfig) -> list[str]:
                 f"{detector.at.y}) is outside the {footprint.width} x "
                 f"{footprint.depth} ft footprint"
             )
+
+    if building.foundation is not None:
+        for index, hold_down in enumerate(building.foundation.hold_downs):
+            if (
+                hold_down.at.x > footprint.width
+                or hold_down.at.y > footprint.depth
+            ):
+                errors.append(
+                    f"building.foundation.hold_downs[{index}]: "
+                    f"'{hold_down.label}' at ({hold_down.at.x}, {hold_down.at.y}) "
+                    f"is outside the {footprint.width} x {footprint.depth} ft "
+                    "footprint"
+                )
 
     for index, fixture in enumerate(project.fixtures):
         if fixture.at.x > footprint.width or fixture.at.y > footprint.depth:
