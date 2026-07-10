@@ -97,3 +97,6 @@ outputs/*
 
 # Claude Code skill symlinks (source lives in .agents/skills/)
 .claude/skills/
+
+# ...but the committed sample output set is tracked
+!examples/sample-output/**
