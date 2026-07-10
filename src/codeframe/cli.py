@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .dxf import (
     UnsupportedRoofError,
+    write_code_compliance,
     write_elevation,
     write_floor_plan,
     write_foundation_plan,
@@ -18,6 +19,7 @@ from .dxf import (
     write_schedules,
     write_section,
     write_site_plan,
+    write_structural_notes,
 )
 from .massing import MassingExportError, freecadcmd_available, write_massing_model
 from .schema import ProjectConfig, ProjectConfigError, load_project_config
@@ -100,8 +102,13 @@ def main(argv: list[str] | None = None) -> int:
         _print_summary(project)
         return 0
 
+    has_structural = (
+        project.building.foundation is not None
+        or project.building.roof.framing is not None
+    )
     writers = [
         ("general_notes.dxf", write_general_notes),
+        ("code_compliance.dxf", write_code_compliance),
         ("site_plan.dxf", write_site_plan),
         ("floor_plan.dxf", write_floor_plan),
         ("roof_plan.dxf", write_roof_plan),
@@ -122,6 +129,7 @@ def main(argv: list[str] | None = None) -> int:
             for section in project.sections
         ],
         ("schedules.dxf", write_schedules),
+        *([("structural_notes.dxf", write_structural_notes)] if has_structural else []),
         *(
             [("foundation_plan.dxf", write_foundation_plan)]
             if project.building.foundation is not None

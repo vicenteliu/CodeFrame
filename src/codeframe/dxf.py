@@ -1098,6 +1098,130 @@ def build_general_notes(project: ProjectConfig) -> Drawing:
     return doc
 
 
+STRUCTURAL_NOTES: list[list[str]] = [
+    ["DESIGN BASIS (VERIFY ALL FOR THE PROJECT SITE): ROOF LL 20 PSF,",
+     "ROOF DL 15 PSF, WIND 110 MPH EXPOSURE C, SEISMIC DESIGN CATEGORY D,",
+     "SOIL BEARING 1,500 PSF ASSUMED."],
+    ["THIS PROJECT IS DESIGNED UNDER THE CONVENTIONAL LIGHT-FRAME",
+     "CONSTRUCTION PROVISIONS OF CRC R301.1.3 (OR THE LOCAL PRESCRIPTIVE",
+     "PROGRAM, E.G. LA COUNTY WFPP). ENGINEERING IS REQUIRED WHERE THE",
+     "DESIGN DEVIATES FROM THOSE PROVISIONS."],
+    ["BRACED WALL LINES: SPACING 25 FT MAX; PANEL LOCATIONS, LENGTHS,",
+     "AND SCHEDULE BY DRAFTER PER CRC R602.10, KEYED TO THE HOLD-DOWNS",
+     "ON THE FOUNDATION PLAN."],
+    ["WOOD: DF-L, MEMBER GRADES PER PLAN CALLOUTS (MIN NO. 2 UNLESS",
+     "NOTED). SILL PLATES IN CONTACT WITH CONCRETE: PRESERVATIVE-TREATED",
+     "(CRC R317)."],
+    ["FASTENING PER CRC TABLE R602.3(1) UNLESS NOTED."],
+    ["CONCRETE: MIN 2,500 PSI AT 28 DAYS (CRC R402.2)."],
+    ["MANUFACTURED TRUSSES (WHERE USED): STAMPED TRUSS PACKAGE IS A",
+     "DEFERRED SUBMITTAL (CRC R802.10.1)."],
+    ["PRELIMINARY SKELETON: A QUALIFIED PROFESSIONAL MUST VERIFY THE",
+     "DESIGN BASIS AND ALL STRUCTURAL CONTENT BEFORE SUBMITTAL."],
+]
+
+
+def write_structural_notes(project: ProjectConfig, path: Path) -> None:
+    """Write the structural general notes DXF (sheet S0)."""
+
+    _save(build_structural_notes(project), path)
+
+
+def build_structural_notes(project: ProjectConfig) -> Drawing:
+    doc = _new_document(NOTES_LAYERS)
+    msp = doc.modelspace()
+
+    cursor = 0.0
+    _add_note_line(msp, "STRUCTURAL GENERAL NOTES", (0.0, cursor))
+    cursor -= 1.6
+    for number, note_lines in enumerate(STRUCTURAL_NOTES, start=1):
+        _add_note_line(msp, f"{number}. {note_lines[0]}", (1.0, cursor))
+        cursor -= _NOTE_LINE_SPACING
+        for continuation in note_lines[1:]:
+            _add_note_line(msp, continuation, (2.0, cursor))
+            cursor -= _NOTE_LINE_SPACING
+    return doc
+
+
+_COMPLIANCE_COLS = [10.0, 6.0, 14.0, 14.0, 5.0]
+
+
+def write_code_compliance(project: ProjectConfig, path: Path) -> None:
+    """Write the code compliance table DXF."""
+
+    _save(build_code_compliance(project), path)
+
+
+def _compliance_rows(project: ProjectConfig) -> list[tuple]:
+    """Requirement-vs-provided rows from stated config values. Arithmetic
+    only — anything CodeFrame cannot compute is marked BY DRAFTER."""
+
+    building = project.building
+    footprint = building.footprint
+    rows: list[tuple] = []
+
+    height_ok = building.wall_height >= 7.0
+    rows.append((
+        "CEILING HEIGHT", "R305.1", "7'-0\" MIN HABITABLE",
+        format_feet_inches(building.wall_height),
+        "OK" if height_ok else "CHECK",
+    ))
+
+    for opening in project.openings:
+        if opening.type != "window" or not opening.egress:
+            continue
+        sill = opening.sill or 0.0
+        rows.append((
+            f"EGRESS ({opening.wall.upper()} WALL)", "R310",
+            "5.7 SF NET, 20\"W x 24\"H, SILL 44\" MAX",
+            f"{opening.width * opening.height:.1f} SF GROSS, "
+            f"{format_feet_inches(opening.width)} x "
+            f"{format_feet_inches(opening.height)}, SILL "
+            f"{format_feet_inches(sill)}",
+            "OK*",
+        ))
+
+    smoke = sum(1 for d in project.detectors if d.type in ("smoke", "combo"))
+    co = sum(1 for d in project.detectors if d.type in ("co", "combo"))
+    rows.append((
+        "SMOKE ALARMS", "R314", "EACH SLEEPING ROOM, OUTSIDE, EACH STORY",
+        f"{smoke} SHOWN ON FLOOR PLAN", "BY DRAFTER",
+    ))
+    rows.append((
+        "CO ALARMS", "R315", "OUTSIDE SLEEPING AREAS, EACH STORY",
+        f"{co} SHOWN ON FLOOR PLAN", "BY DRAFTER",
+    ))
+
+    attic_area = footprint.width * footprint.depth
+    rows.append((
+        "ATTIC VENTILATION", "R806.2", "1/150 OF ATTIC AREA",
+        f"{attic_area / 150:.1f} SF NET FREE REQUIRED", "BY DRAFTER",
+    ))
+    return rows
+
+
+def build_code_compliance(project: ProjectConfig) -> Drawing:
+    doc = _new_document(SCHEDULE_LAYERS)
+    msp = doc.modelspace()
+
+    bottom = _draw_table(
+        msp, "CODE COMPLIANCE SUMMARY",
+        ["ITEM", "CRC", "REQUIRED", "PROVIDED", "STATUS"],
+        _compliance_rows(project), (0.0, 0.0), col_widths=_COMPLIANCE_COLS,
+    )
+    _add_note_line(
+        msp,
+        "* NET CLEAR OPENING DEPENDS ON WINDOW TYPE - VERIFY. THIS TABLE IS",
+        (0.0, bottom - 1.5),
+    )
+    _add_note_line(
+        msp,
+        "ARITHMETIC ON STATED VALUES, NOT A CODE COMPLIANCE APPROVAL.",
+        (0.0, bottom - 1.5 - _NOTE_LINE_SPACING),
+    )
+    return doc
+
+
 def write_schedules(project: ProjectConfig, path: Path) -> None:
     """Write the door and window schedules DXF."""
 
@@ -1108,11 +1232,15 @@ _SCHEDULE_COLS = [3.0, 4.5, 4.5, 5.5, 3.0, 5.0]
 _SCHEDULE_ROW_H = 1.5
 
 
-def _draw_table(msp, title: str, headers: list[str], rows: list[tuple], top_left) -> float:
-    """Draw one schedule table; returns the y of its bottom edge."""
+def _draw_table(
+    msp, title: str, headers: list[str], rows: list[tuple], top_left,
+    col_widths: list[float] | None = None,
+) -> float:
+    """Draw one table; returns the y of its bottom edge."""
 
+    widths = col_widths if col_widths is not None else _SCHEDULE_COLS
     x0, y0 = top_left
-    total_w = sum(_SCHEDULE_COLS)
+    total_w = sum(widths)
     _add_label(msp, "A-ANNO-TEXT", title, (x0 + total_w / 2, y0 + 1.0))
 
     n_grid_rows = len(rows) + 1  # header + data
@@ -1121,14 +1249,14 @@ def _draw_table(msp, title: str, headers: list[str], rows: list[tuple], top_left
         y = y0 - i * _SCHEDULE_ROW_H
         msp.add_line((x0, y), (x0 + total_w, y), dxfattribs={"layer": "A-ANNO-TABL"})
     x = x0
-    for width in [0.0, *_SCHEDULE_COLS]:
+    for width in [0.0, *widths]:
         x += width
         msp.add_line((x, y0), (x, bottom), dxfattribs={"layer": "A-ANNO-TABL"})
 
     for row_index, cells in enumerate([tuple(headers), *rows]):
         y_mid = y0 - (row_index + 0.5) * _SCHEDULE_ROW_H
         x = x0
-        for width, cell in zip(_SCHEDULE_COLS, cells):
+        for width, cell in zip(widths, cells):
             if str(cell):
                 _add_label(msp, "A-ANNO-TEXT", str(cell), (x + width / 2, y_mid))
             x += width

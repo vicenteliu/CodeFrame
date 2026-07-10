@@ -22,6 +22,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
 from .dxf import (
+    build_code_compliance,
     build_elevation,
     build_floor_plan,
     build_foundation_plan,
@@ -31,6 +32,7 @@ from .dxf import (
     build_schedules,
     build_section,
     build_site_plan,
+    build_structural_notes,
 )
 from .schema import ProjectConfig
 
@@ -189,6 +191,10 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
                 pdf, build_general_notes(project), "GENERAL NOTES", "A0.1",
                 ARCHITECTURAL_SCALES,
             )
+            single_doc_page(
+                pdf, build_code_compliance(project), "CODE COMPLIANCE", "A0.2",
+                ARCHITECTURAL_SCALES,
+            )
             single_doc_page(pdf, site, "SITE PLAN", "A1.0", ENGINEERING_SCALES)
             single_doc_page(pdf, floor, "FLOOR PLAN", "A2.0", ARCHITECTURAL_SCALES)
 
@@ -227,6 +233,14 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
                     f"SECTION {section.name}-{section.name}",
                     f"A6.{index}",
                     ARCHITECTURAL_SCALES,
+                )
+            if (
+                project.building.foundation is not None
+                or project.building.roof.framing is not None
+            ):
+                single_doc_page(
+                    pdf, build_structural_notes(project), "STRUCTURAL NOTES",
+                    "S0.0", ARCHITECTURAL_SCALES,
                 )
             if project.building.foundation is not None:
                 single_doc_page(

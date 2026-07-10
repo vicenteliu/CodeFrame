@@ -9,6 +9,7 @@ import pytest
 from codeframe.dxf import (
     UnsupportedRoofError,
     format_feet_inches,
+    write_code_compliance,
     write_elevation,
     write_floor_plan,
     write_foundation_plan,
@@ -18,6 +19,7 @@ from codeframe.dxf import (
     write_schedules,
     write_section,
     write_site_plan,
+    write_structural_notes,
 )
 from codeframe.schema import load_project_config
 
@@ -40,6 +42,8 @@ PLAN_WRITERS = [
     ("general_notes", write_general_notes),
     ("foundation_plan", write_foundation_plan),
     ("roof_framing_plan", write_roof_framing_plan),
+    ("structural_notes", write_structural_notes),
+    ("code_compliance", write_code_compliance),
 ]
 
 # Demo roof: gable 4:12 over a 20 ft span, 1 ft overhang, 9 ft walls.
@@ -518,6 +522,39 @@ def test_roof_framing_truss_variant_notes_deferred_submittal(tmp_path):
     joined = "\n".join(labels)
     assert "DEFERRED SUBMITTAL" in joined
     assert "CRC R802.10.1" in joined
+
+
+def test_structural_notes_carry_design_basis(demo_project, tmp_path):
+    out_path = tmp_path / "structural_notes.dxf"
+    write_structural_notes(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    joined = "\n".join(text.dxf.text for text in msp.query("TEXT"))
+    assert "STRUCTURAL GENERAL NOTES" in joined
+    assert "DESIGN BASIS" in joined
+    assert "CRC R301.1.3" in joined
+    assert "BRACED WALL LINES: SPACING 25 FT MAX" in joined
+
+
+def test_code_compliance_table_computes_stated_values(demo_project, tmp_path):
+    out_path = tmp_path / "code_compliance.dxf"
+    write_code_compliance(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = [text.dxf.text for text in msp.query("TEXT")]
+
+    assert "CODE COMPLIANCE SUMMARY" in labels
+    ceiling = labels.index("CEILING HEIGHT")
+    assert labels[ceiling:ceiling + 5] == [
+        "CEILING HEIGHT", "R305.1", "7'-0\" MIN HABITABLE", "9'-0\"", "OK",
+    ]
+    # The 4x3 egress window: 12 sf gross on a 3 ft sill.
+    egress = labels.index("EGRESS (LEFT WALL)")
+    assert labels[egress + 3] == "12.0 SF GROSS, 4'-0\" x 3'-0\", SILL 3'-0\""
+    assert labels[egress + 4] == "OK*"
+    joined = "\n".join(labels)
+    assert "3.2 SF NET FREE REQUIRED" in joined
+    assert "NOT A CODE COMPLIANCE APPROVAL" in joined
 
 
 def test_unsupported_roof_type_raises_clear_error(tmp_path):
