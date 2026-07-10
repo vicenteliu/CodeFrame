@@ -163,6 +163,17 @@ class Detector(_Model):
     at: Point
 
 
+class SectionCut(_Model):
+    """A transverse building section, cut perpendicular to the roof ridge.
+
+    `at` is the station along the ridge axis. The view looks toward the
+    rising ridge-axis coordinate (rear for a y ridge, right for an x ridge).
+    """
+
+    name: str
+    at: NonNegativeFeet
+
+
 class ProjectConfig(_Model):
     schema_version: Literal[1]
     name: str
@@ -175,6 +186,7 @@ class ProjectConfig(_Model):
     openings: list[Opening] = []
     rooms: list[Room] = []
     detectors: list[Detector] = []
+    sections: list[SectionCut] = []
     notes: list[str] = []
 
 
@@ -327,6 +339,25 @@ def _geometry_errors(project: ProjectConfig) -> list[str]:
                 f"{detector.at.y}) is outside the {footprint.width} x "
                 f"{footprint.depth} ft footprint"
             )
+
+    if project.sections and building.roof.ridge_axis is None:
+        errors.append("sections: section cuts require a gable roof with a ridge_axis")
+    else:
+        ridge_run = (
+            footprint.depth if building.roof.ridge_axis == "y" else footprint.width
+        )
+        seen_section_names = set()
+        for index, cut in enumerate(project.sections):
+            if cut.at > ridge_run:
+                errors.append(
+                    f"sections[{index}]: station {cut.at} is beyond the "
+                    f"{ridge_run} ft ridge run"
+                )
+            if cut.name in seen_section_names:
+                errors.append(
+                    f"sections[{index}]: duplicate section name '{cut.name}'"
+                )
+            seen_section_names.add(cut.name)
 
     return errors
 

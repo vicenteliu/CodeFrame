@@ -13,6 +13,7 @@ from .dxf import (
     write_floor_plan,
     write_roof_plan,
     write_schedules,
+    write_section,
     write_site_plan,
 )
 from .massing import MassingExportError, freecadcmd_available, write_massing_model
@@ -106,6 +107,15 @@ def main(argv: list[str] | None = None) -> int:
                 lambda project, path, wall=wall: write_elevation(project, wall, path),
             )
             for wall in ("front", "rear", "left", "right")
+        ],
+        *[
+            (
+                f"section_{section.name.lower()}.dxf",
+                lambda project, path, section=section: write_section(
+                    project, section, path
+                ),
+            )
+            for section in project.sections
         ],
         ("schedules.dxf", write_schedules),
         ("drawing_set.pdf", write_sheet_set),

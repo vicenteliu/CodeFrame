@@ -88,6 +88,15 @@ direction the ridge runs: `"y"` (front-to-back — gable triangles face the
 street) or `"x"` (side-to-side — triangles face left/right). `overhang` is
 uniform on all sides.
 
+## Section cuts
+
+`sections` is a top-level list of transverse building sections:
+`{"name": "A", "at": <station>}`. The cut plane is perpendicular to the
+roof ridge at that station along the ridge axis, looking toward the rising
+coordinate (rear for a `y` ridge, right for an `x` ridge). Each cut adds a
+`section_<name>.dxf`, a sheet in the PDF, and a dashed, bubbled cut line
+on the floor plan. Gable roofs only (like the rest of the engine).
+
 ## Common wall thickness values
 
 | Construction                     | `exterior_wall_thickness` |

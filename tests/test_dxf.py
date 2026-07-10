@@ -13,6 +13,7 @@ from codeframe.dxf import (
     write_floor_plan,
     write_roof_plan,
     write_schedules,
+    write_section,
     write_site_plan,
 )
 from codeframe.schema import load_project_config
@@ -29,6 +30,10 @@ PLAN_WRITERS = [
     ("elevation_left", lambda project, path: write_elevation(project, "left", path)),
     ("elevation_right", lambda project, path: write_elevation(project, "right", path)),
     ("schedules", write_schedules),
+    (
+        "section_a",
+        lambda project, path: write_section(project, project.sections[0], path),
+    ),
 ]
 
 # Demo roof: gable 4:12 over a 20 ft span, 1 ft overhang, 9 ft walls.
@@ -294,11 +299,47 @@ def test_floor_plan_draws_detector_symbols(demo_project, tmp_path):
     assert fire_texts == {"S/CO", "S"}
 
 
+def test_section_shows_cut_walls_and_roof_profile(demo_project, tmp_path):
+    out_path = tmp_path / "section_a.dxf"
+    write_section(demo_project, demo_project.sections[0], out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+
+    # Both exterior walls cut through, 0.5 ft thick, full height.
+    walls = msp.query("LWPOLYLINE[layer=='A-WALL']")
+    assert len(walls) == 2
+    assert rectangle_corners(walls[0]) == {(0, 0), (0.5, 0), (0.5, 9), (0, 9)}
+    assert rectangle_corners(walls[1]) == {(19.5, 0), (20, 0), (20, 9), (19.5, 9)}
+
+    # Roof profile matches the gable-end elevation; plate line runs across.
+    roof = line_segments(msp, "A-ROOF")
+    assert segment(-1, EAVE_Z, 10, RIDGE_Z) in roof
+    assert segment(10, RIDGE_Z, 21, EAVE_Z) in roof
+    assert segment(0, 9, 20, 9) in roof
+
+    labels = {text.dxf.text for text in msp.query("TEXT")}
+    assert "SECTION A-A" in labels
+    assert len(msp.query("DIMENSION")) == 2
+
+
+def test_floor_plan_marks_section_cut_line(demo_project, tmp_path):
+    out_path = tmp_path / "floor_plan.dxf"
+    write_floor_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    assert segment(-5, 10, 25, 10) in line_segments(msp, "A-ANNO-SECT")
+    bubbles = msp.query("CIRCLE[layer=='A-ANNO-SECT']")
+    assert len(bubbles) == 2
+    names = [text.dxf.text for text in msp.query("TEXT[layer=='A-ANNO-SECT']")]
+    assert names == ["A", "A"]
+
+
 def test_unsupported_roof_type_raises_clear_error(tmp_path):
     import json
 
     data = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
     data["building"]["roof"] = {"type": "flat", "slope": "0:12", "overhang": 1}
+    data["sections"] = []
     config_path = tmp_path / "flat.json"
     config_path.write_text(json.dumps(data), encoding="utf-8")
     project = load_project_config(config_path)

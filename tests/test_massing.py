@@ -119,6 +119,7 @@ def test_roof_prism_ridge_along_x(tmp_path):
 def test_unsupported_roof_type_raises_clear_error(tmp_path):
     def mutate(data):
         data["building"]["roof"] = {"type": "flat", "slope": "0:12", "overhang": 1}
+        data["sections"] = []
 
     project = demo_variant(tmp_path, mutate)
     with pytest.raises(UnsupportedRoofError) as exc_info:

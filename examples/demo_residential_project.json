@@ -34,6 +34,9 @@
     { "type": "combo", "at": { "x": 10, "y": 12 } },
     { "type": "smoke", "at": { "x": 15, "y": 6 } }
   ],
+  "sections": [
+    { "name": "A", "at": 10 }
+  ],
   "notes": [
     "Demo input only; dimensions and setbacks are placeholders.",
     "No code compliance or permit readiness is implied."

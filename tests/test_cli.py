@@ -48,6 +48,7 @@ EXPECTED_OUTPUTS = (
     "elevation_rear.dxf",
     "elevation_left.dxf",
     "elevation_right.dxf",
+    "section_a.dxf",
     "schedules.dxf",
     "drawing_set.pdf",
 )
@@ -88,6 +89,7 @@ def test_schema_prints_the_project_config_json_schema(capsys):
 def test_generate_reports_unsupported_roof_cleanly(tmp_path, capsys):
     data = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
     data["building"]["roof"] = {"type": "flat", "slope": "0:12", "overhang": 1}
+    data["sections"] = []
     config_path = tmp_path / "flat.json"
     config_path.write_text(json.dumps(data), encoding="utf-8")
 

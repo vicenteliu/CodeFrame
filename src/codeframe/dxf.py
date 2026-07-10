@@ -22,7 +22,7 @@ from .geometry import (
     subtract_intervals,
     wall_frame,
 )
-from .schema import ProjectConfig, Roof
+from .schema import ProjectConfig, Roof, SectionCut
 
 
 class UnsupportedRoofError(ValueError):
@@ -45,6 +45,16 @@ FLOOR_LAYERS = {
     "A-DOOR": {"color": 4, "lineweight": 25},
     "A-GLAZ": {"color": 4, "lineweight": 25},
     "A-FIRE": {"color": 1, "lineweight": 25},
+    "A-ANNO-SECT": {"color": 6, "lineweight": 25, "linetype": "DASHED"},
+    "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
+    "A-ANNO-DIMS": {"color": 3, "lineweight": 13},
+}
+
+SECTION_LAYERS = {
+    "A-WALL": {"color": 7, "lineweight": 50},
+    "A-WALL-INTR": {"color": 7, "lineweight": 35},
+    "A-ROOF": {"color": 7, "lineweight": 50},
+    "A-ELEV": {"color": 7, "lineweight": 35},
     "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
     "A-ANNO-DIMS": {"color": 3, "lineweight": 13},
 }
@@ -480,6 +490,21 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
             dxfattribs={"layer": "A-FIRE", "height": TEXT_HEIGHT},
         ).set_placement(at, align=TextEntityAlignment.MIDDLE_CENTER)
 
+    # Section cut lines run across the plan, bubbled at both ends.
+    for cut in project.sections:
+        if building.roof.ridge_axis == "y":
+            ends = [(-5.0, cut.at), (footprint.width + 5.0, cut.at)]
+            bubbles = [(-5.8, cut.at), (footprint.width + 5.8, cut.at)]
+        else:
+            ends = [(cut.at, -5.0), (cut.at, footprint.depth + 5.0)]
+            bubbles = [(cut.at, -5.8), (cut.at, footprint.depth + 5.8)]
+        msp.add_line(*ends, dxfattribs={"layer": "A-ANNO-SECT"})
+        for bubble in bubbles:
+            msp.add_circle(center=bubble, radius=0.7, dxfattribs={"layer": "A-ANNO-SECT"})
+            msp.add_text(
+                cut.name, dxfattribs={"layer": "A-ANNO-SECT", "height": TEXT_HEIGHT},
+            ).set_placement(bubble, align=TextEntityAlignment.MIDDLE_CENTER)
+
     # Opening location chains: corner -> jamb -> jamb -> corner along each
     # exterior wall that has openings, one dimension row outside the face.
     chain_rows = {
@@ -669,6 +694,75 @@ def build_schedules(project: ProjectConfig) -> Drawing:
         msp, "WINDOW SCHEDULE",
         ["MARK", "WIDTH", "HEIGHT", "SILL", "QTY", "REMARKS"], window_cells,
         (0.0, bottom - 3.5),
+    )
+    return doc
+
+
+def write_section(project: ProjectConfig, section: SectionCut, path: Path) -> None:
+    """Write one transverse building section DXF."""
+
+    _save(build_section(project, section), path)
+
+
+def build_section(project: ProjectConfig, section: SectionCut) -> Drawing:
+    building = project.building
+    roof = building.roof
+    _require_gable(roof)
+
+    doc = _new_document(SECTION_LAYERS)
+    msp = doc.modelspace()
+
+    footprint = building.footprint
+    wall_height = building.wall_height
+    thickness = building.exterior_wall_thickness
+    rise = parse_slope(roof.slope)
+    overhang = roof.overhang
+
+    # The view spans the axis perpendicular to the ridge. Looking toward
+    # the rising ridge coordinate: x maps straight for a y ridge; for an
+    # x ridge the viewer's horizontal runs against y.
+    ridge_is_y = roof.ridge_axis == "y"
+    span = footprint.width if ridge_is_y else footprint.depth
+
+    def h(value: float) -> float:
+        return value if ridge_is_y else span - value
+
+    ridge_z = wall_height + (span / 2) * rise
+    eave_z = wall_height - overhang * rise
+
+    # Grade line and cut exterior walls.
+    msp.add_line(
+        (-overhang - 3, 0), (span + overhang + 3, 0), dxfattribs={"layer": "A-ELEV"}
+    )
+    for band_lo in (0.0, span - thickness):
+        _add_rectangle(msp, "A-WALL", band_lo, 0, thickness, wall_height)
+
+    # Interior walls crossed by the cut plane.
+    crossing_axis = "y" if ridge_is_y else "x"
+    for wall in project.interior_walls:
+        if wall.axis != crossing_axis or not wall.from_ <= section.at <= wall.to:
+            continue
+        half = wall.thickness / 2
+        lo = min(h(wall.offset - half), h(wall.offset + half))
+        _add_rectangle(msp, "A-WALL-INTR", lo, 0, wall.thickness, wall_height)
+
+    # Ceiling line at the plate, then the roof profile up to the ridge.
+    msp.add_line((0, wall_height), (span, wall_height), dxfattribs={"layer": "A-ROOF"})
+    apex = (span / 2, ridge_z)
+    msp.add_line((-overhang, eave_z), apex, dxfattribs={"layer": "A-ROOF"})
+    msp.add_line(apex, (span + overhang, eave_z), dxfattribs={"layer": "A-ROOF"})
+
+    _add_label(
+        msp, "A-ANNO-TEXT",
+        f"SECTION {section.name}-{section.name}", (span / 2, -2.5),
+    )
+    _add_dim(
+        msp, "A-ANNO-DIMS", (0, 0), (0, wall_height),
+        angle=90, base=(-overhang - 1.75, 0),
+    )
+    _add_dim(
+        msp, "A-ANNO-DIMS", (0, 0), (0, ridge_z),
+        angle=90, base=(-overhang - 3, 0),
     )
     return doc
 

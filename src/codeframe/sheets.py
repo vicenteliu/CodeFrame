@@ -26,6 +26,7 @@ from .dxf import (
     build_floor_plan,
     build_roof_plan,
     build_schedules,
+    build_section,
     build_site_plan,
 )
 from .schema import ProjectConfig
@@ -212,3 +213,11 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
             single_doc_page(
                 pdf, build_schedules(project), "SCHEDULES", "A5.0", ARCHITECTURAL_SCALES
             )
+            for index, section in enumerate(project.sections):
+                single_doc_page(
+                    pdf,
+                    build_section(project, section),
+                    f"SECTION {section.name}-{section.name}",
+                    f"A6.{index}",
+                    ARCHITECTURAL_SCALES,
+                )
