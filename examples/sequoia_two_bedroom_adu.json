@@ -1,27 +1,53 @@
 {
   "schema_version": 1,
-  "name": "Sequoia — 2BR ADU",
+  "name": "Sequoia \u2014 2BR ADU",
   "location": "California, USA",
   "output_target": "outputs/sequoia-2br",
   "units": "feet",
   "site": {
-    "lot": { "width": 50, "depth": 100 },
+    "lot": {
+      "width": 50,
+      "depth": 100
+    },
     "north_rotation": 0,
-    "setbacks": { "front": 20, "rear": 4, "left": 4, "right": 4 },
+    "setbacks": {
+      "front": 20,
+      "rear": 4,
+      "left": 4,
+      "right": 4
+    },
     "existing_structures": [
-      { "label": "Existing Dwelling", "x": 10, "y": 16, "width": 30, "depth": 38 }
+      {
+        "label": "Existing Dwelling",
+        "x": 10,
+        "y": 16,
+        "width": 30,
+        "depth": 38
+      }
     ]
   },
   "building": {
-    "position": { "x": 12.5, "y": 62 },
-    "footprint": { "width": 25, "depth": 32 },
+    "position": {
+      "x": 12.5,
+      "y": 62
+    },
+    "footprint": {
+      "width": 25,
+      "depth": 32
+    },
     "wall_height": 9,
     "exterior_wall_thickness": 0.5,
     "roof": {
-      "type": "gable", "slope": "4:12", "ridge_axis": "x", "overhang": 1,
+      "type": "gable",
+      "slope": "4:12",
+      "ridge_axis": "x",
+      "overhang": 1,
       "framing": {
-        "member": "rafter", "size": "2x10", "spacing": 2,
-        "species_grade": "DF #1", "ridge": "2x12 RIDGE BOARD"
+        "member": "rafter",
+        "size": "2x10",
+        "spacing": 2,
+        "species_grade": "DF #1",
+        "ridge": "2x12 RIDGE BOARD"
       }
     },
     "foundation": {
@@ -29,61 +55,320 @@
       "footing_width": 1,
       "footing_depth": 1,
       "hold_downs": [
-        { "at": { "x": 0.75, "y": 0.75 }, "label": "HD1" },
-        { "at": { "x": 24.25, "y": 0.75 }, "label": "HD1" },
-        { "at": { "x": 0.75, "y": 31.25 }, "label": "HD1" },
-        { "at": { "x": 24.25, "y": 31.25 }, "label": "HD1" }
+        {
+          "at": {
+            "x": 0.75,
+            "y": 0.75
+          },
+          "label": "HD1"
+        },
+        {
+          "at": {
+            "x": 24.25,
+            "y": 0.75
+          },
+          "label": "HD1"
+        },
+        {
+          "at": {
+            "x": 0.75,
+            "y": 31.25
+          },
+          "label": "HD1"
+        },
+        {
+          "at": {
+            "x": 24.25,
+            "y": 31.25
+          },
+          "label": "HD1"
+        }
       ]
     }
   },
   "interior_walls": [
-    { "axis": "x", "offset": 20, "from": 0, "to": 25, "thickness": 0.375, "bearing": true,
+    {
+      "axis": "x",
+      "offset": 20,
+      "from": 0,
+      "to": 25,
+      "thickness": 0.375,
+      "bearing": true,
       "doors": [
-        { "at": 8.5, "width": 2.67, "height": 6.67, "swing": "in-left" },
-        { "at": 16, "width": 2.67, "height": 6.67, "swing": "in-right" }
-      ] },
-    { "axis": "y", "offset": 12.5, "from": 20, "to": 32, "thickness": 0.375 },
-    { "axis": "x", "offset": 13, "from": 0, "to": 8, "thickness": 0.375 },
-    { "axis": "y", "offset": 8, "from": 13, "to": 20, "thickness": 0.375,
-      "doors": [ { "at": 15.5, "width": 2.5, "height": 6.67, "swing": "out-left" } ] }
+        {
+          "at": 8.5,
+          "width": 2.67,
+          "height": 6.67,
+          "swing": "in-left"
+        },
+        {
+          "at": 16,
+          "width": 2.67,
+          "height": 6.67,
+          "swing": "in-right"
+        }
+      ]
+    },
+    {
+      "axis": "y",
+      "offset": 12.5,
+      "from": 20,
+      "to": 32,
+      "thickness": 0.375
+    },
+    {
+      "axis": "x",
+      "offset": 13,
+      "from": 0,
+      "to": 8,
+      "thickness": 0.375
+    },
+    {
+      "axis": "y",
+      "offset": 8,
+      "from": 13,
+      "to": 20,
+      "thickness": 0.375,
+      "doors": [
+        {
+          "at": 16.5,
+          "width": 2.5,
+          "height": 6.67,
+          "swing": "out-left"
+        }
+      ]
+    }
   ],
   "openings": [
-    { "type": "door", "wall": "front", "offset": 11, "width": 3, "height": 6.67, "swing": "in-left" },
-    { "type": "window", "wall": "front", "offset": 3.5, "width": 6, "height": 4, "sill": 2.5 },
-    { "type": "window", "wall": "front", "offset": 18, "width": 4, "height": 3, "sill": 3.5 },
-    { "type": "window", "wall": "left", "offset": 4, "width": 5, "height": 4, "sill": 2.5 },
-    { "type": "window", "wall": "left", "offset": 15, "width": 2, "height": 2, "sill": 5 },
-    { "type": "window", "wall": "left", "offset": 25, "width": 5, "height": 4, "sill": 2.5, "egress": true },
-    { "type": "window", "wall": "rear", "offset": 18.5, "width": 5, "height": 4, "sill": 2.5, "egress": true },
-    { "type": "window", "wall": "right", "offset": 4, "width": 4, "height": 3, "sill": 3.5 },
-    { "type": "window", "wall": "right", "offset": 25, "width": 4, "height": 4, "sill": 2.5 }
+    {
+      "type": "door",
+      "wall": "front",
+      "offset": 11,
+      "width": 3,
+      "height": 6.67,
+      "swing": "in-left"
+    },
+    {
+      "type": "window",
+      "wall": "front",
+      "offset": 3.5,
+      "width": 6,
+      "height": 4,
+      "sill": 2.5
+    },
+    {
+      "type": "window",
+      "wall": "front",
+      "offset": 18,
+      "width": 4,
+      "height": 3,
+      "sill": 3.5
+    },
+    {
+      "type": "window",
+      "wall": "left",
+      "offset": 4,
+      "width": 5,
+      "height": 4,
+      "sill": 2.5
+    },
+    {
+      "type": "window",
+      "wall": "left",
+      "offset": 15,
+      "width": 2,
+      "height": 2,
+      "sill": 5
+    },
+    {
+      "type": "window",
+      "wall": "left",
+      "offset": 25,
+      "width": 5,
+      "height": 4,
+      "sill": 2.5,
+      "egress": true
+    },
+    {
+      "type": "window",
+      "wall": "rear",
+      "offset": 18.5,
+      "width": 5,
+      "height": 4,
+      "sill": 2.5,
+      "egress": true
+    },
+    {
+      "type": "window",
+      "wall": "right",
+      "offset": 4,
+      "width": 4,
+      "height": 3,
+      "sill": 3.5
+    },
+    {
+      "type": "window",
+      "wall": "right",
+      "offset": 25,
+      "width": 4,
+      "height": 4,
+      "sill": 2.5
+    }
   ],
   "rooms": [
-    { "name": "Living Room", "label_at": { "x": 7, "y": 7 }, "area": 264 },
-    { "name": "Hall", "label_at": { "x": 10, "y": 16.5 }, "area": 50 },
-    { "name": "Kitchen", "label_at": { "x": 20, "y": 5 }, "area": 130 },
-    { "name": "Bath", "label_at": { "x": 4, "y": 16.5 }, "area": 56 },
-    { "name": "Bedroom 1", "label_at": { "x": 6, "y": 26 }, "area": 150 },
-    { "name": "Bedroom 2", "label_at": { "x": 19, "y": 26 }, "area": 150 }
+    {
+      "name": "Living Room",
+      "label_at": {
+        "x": 7,
+        "y": 7
+      },
+      "area": 264
+    },
+    {
+      "name": "Hall",
+      "label_at": {
+        "x": 10,
+        "y": 16.5
+      },
+      "area": 50
+    },
+    {
+      "name": "Kitchen",
+      "label_at": {
+        "x": 20,
+        "y": 5
+      },
+      "area": 130
+    },
+    {
+      "name": "Bath",
+      "label_at": {
+        "x": 4,
+        "y": 16.5
+      },
+      "area": 56
+    },
+    {
+      "name": "Bedroom 1",
+      "label_at": {
+        "x": 6,
+        "y": 26
+      },
+      "area": 150
+    },
+    {
+      "name": "Bedroom 2",
+      "label_at": {
+        "x": 19,
+        "y": 26
+      },
+      "area": 150
+    }
   ],
   "fixtures": [
-    { "type": "toilet", "at": { "x": 2, "y": 18.6 } },
-    { "type": "lavatory", "at": { "x": 5.5, "y": 18.8 } },
-    { "type": "bathtub", "at": { "x": 4, "y": 14.5 }, "rotation": 180 },
-    { "type": "counter", "at": { "x": 24.25, "y": 5 }, "rotation": 90,
-      "size": { "width": 8, "depth": 1.5 } },
-    { "type": "kitchen-sink", "at": { "x": 24.1, "y": 4 }, "rotation": 270 },
-    { "type": "range", "at": { "x": 24.1, "y": 6.5 }, "rotation": 270 },
-    { "type": "refrigerator", "at": { "x": 23.7, "y": 2 }, "rotation": 270 },
-    { "type": "washer-dryer", "at": { "x": 10.3, "y": 16.5 }, "rotation": 90 },
-    { "type": "water-heater", "at": { "x": 13.8, "y": 18.5 } }
+    {
+      "type": "toilet",
+      "at": {
+        "x": 2,
+        "y": 18.6
+      }
+    },
+    {
+      "type": "lavatory",
+      "at": {
+        "x": 5.5,
+        "y": 18.8
+      }
+    },
+    {
+      "type": "bathtub",
+      "at": {
+        "x": 4,
+        "y": 14.5
+      },
+      "rotation": 180
+    },
+    {
+      "type": "counter",
+      "at": {
+        "x": 24.25,
+        "y": 5
+      },
+      "rotation": 90,
+      "size": {
+        "width": 8,
+        "depth": 1.5
+      }
+    },
+    {
+      "type": "kitchen-sink",
+      "at": {
+        "x": 24.1,
+        "y": 4
+      },
+      "rotation": 270
+    },
+    {
+      "type": "range",
+      "at": {
+        "x": 24.1,
+        "y": 6.5
+      },
+      "rotation": 270
+    },
+    {
+      "type": "refrigerator",
+      "at": {
+        "x": 23.7,
+        "y": 2
+      },
+      "rotation": 270
+    },
+    {
+      "type": "washer-dryer",
+      "at": {
+        "x": 10.3,
+        "y": 16.5
+      },
+      "rotation": 90
+    },
+    {
+      "type": "water-heater",
+      "at": {
+        "x": 13.8,
+        "y": 18.5
+      }
+    }
   ],
   "detectors": [
-    { "type": "smoke", "at": { "x": 6, "y": 23 } },
-    { "type": "smoke", "at": { "x": 19, "y": 23 } },
-    { "type": "combo", "at": { "x": 10, "y": 18.7 } }
+    {
+      "type": "smoke",
+      "at": {
+        "x": 6,
+        "y": 23
+      }
+    },
+    {
+      "type": "smoke",
+      "at": {
+        "x": 19,
+        "y": 23
+      }
+    },
+    {
+      "type": "combo",
+      "at": {
+        "x": 10,
+        "y": 18.7
+      }
+    }
   ],
-  "sections": [ { "name": "A", "at": 10 } ],
+  "sections": [
+    {
+      "name": "A",
+      "at": 10
+    }
+  ],
   "notes": [
     "Flagship example: 800 sf 2BR ADU, the scale of LA County Standard Plan C (800 sf) and Sacramento's Shelf-Ready 2BR (747 sf).",
     "Ridge runs side-to-side (ridge_axis x) to exercise the cross orientation.",
