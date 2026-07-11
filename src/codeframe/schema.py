@@ -237,6 +237,19 @@ class Fixture(_Model):
         return self
 
 
+class Callout(_Model):
+    """A text label with a leader arrow to an explicit point.
+
+    `at` is the leader tail — the text sits just beyond it, on the side
+    away from the target — and the arrowhead lands on `target`. Both are
+    building-local points.
+    """
+
+    text: str
+    at: Point
+    target: Point
+
+
 class SectionCut(_Model):
     """A transverse building section, cut perpendicular to the roof ridge.
 
@@ -261,6 +274,7 @@ class ProjectConfig(_Model):
     rooms: list[Room] = []
     detectors: list[Detector] = []
     fixtures: list[Fixture] = []
+    callouts: list[Callout] = []
     sections: list[SectionCut] = []
     notes: list[str] = []
 
@@ -434,6 +448,20 @@ def _geometry_errors(project: ProjectConfig) -> list[str]:
                 f"fixtures[{index}]: {fixture.type} at ({fixture.at.x}, "
                 f"{fixture.at.y}) is outside the {footprint.width} x "
                 f"{footprint.depth} ft footprint"
+            )
+
+    for index, callout in enumerate(project.callouts):
+        for field, point in (("at", callout.at), ("target", callout.target)):
+            if point.x > footprint.width or point.y > footprint.depth:
+                errors.append(
+                    f"callouts[{index}]: {field} ({point.x}, {point.y}) is "
+                    f"outside the {footprint.width} x {footprint.depth} ft "
+                    "footprint"
+                )
+        if (callout.at.x, callout.at.y) == (callout.target.x, callout.target.y):
+            errors.append(
+                f"callouts[{index}]: at and target are the same point; the "
+                "leader needs a direction"
             )
 
     if project.sections and building.roof.ridge_axis is None:

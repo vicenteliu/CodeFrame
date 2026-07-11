@@ -10,6 +10,7 @@ from pathlib import Path
 from .dxf import (
     UnsupportedRoofError,
     write_code_compliance,
+    write_details,
     write_elevation,
     write_floor_plan,
     write_foundation_plan,
@@ -140,6 +141,7 @@ def main(argv: list[str] | None = None) -> int:
             if project.building.roof.framing is not None
             else []
         ),
+        *([("details.dxf", write_details)] if has_structural else []),
         ("drawing_set.pdf", write_sheet_set),
     ]
     if freecadcmd_available():

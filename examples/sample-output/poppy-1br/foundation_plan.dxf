@@ -549,7 +549,7 @@ $SPLINESEGS
   9
 $HANDSEED
   5
-CD
+CE
   9
 $SURFTAB1
  70
@@ -3181,7 +3181,7 @@ ACAD
   0
 APPID
   5
-CA
+CB
 330
 3
 100
@@ -3195,7 +3195,7 @@ HATCHBACKGROUNDCOLOR
   0
 APPID
   5
-CB
+CC
 330
 3
 100
@@ -5647,7 +5647,7 @@ AcDbMText
  71
 5
   1
-22'
+22'-0"
   7
 OpenSansCondensed-Light
   0
@@ -5889,7 +5889,7 @@ AcDbMText
  71
 5
   1
-34'
+34'-0"
   7
 OpenSansCondensed-Light
  50
@@ -6411,7 +6411,7 @@ CODEFRAME
  71
 5
   1
-<>
+22'-0"
 100
 AcDbAlignedDimension
  13
@@ -6465,7 +6465,7 @@ CODEFRAME
  71
 5
   1
-<>
+34'-0"
 100
 AcDbAlignedDimension
  13
@@ -6503,7 +6503,7 @@ AcDbText
  30
 0.0
  40
-0.375
+0.75
   1
 FOUNDATION PLAN
  72
@@ -6519,9 +6519,33 @@ AcDbText
  73
 2
   0
-TEXT
+LINE
   5
 BB
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbLine
+ 10
+6.5
+ 20
+-6.025
+ 30
+0.0
+ 11
+15.5
+ 21
+-6.025
+ 31
+0.0
+  0
+TEXT
+  5
+BC
 330
 17
 100
@@ -6553,7 +6577,7 @@ AcDbText
   0
 TEXT
   5
-BC
+BD
 330
 17
 100
@@ -6585,7 +6609,7 @@ AcDbText
   0
 TEXT
   5
-BD
+BE
 330
 17
 100
@@ -6617,7 +6641,7 @@ AcDbText
   0
 TEXT
   5
-BE
+BF
 330
 17
 100
@@ -6649,7 +6673,7 @@ AcDbText
   0
 TEXT
   5
-BF
+C0
 330
 17
 100
@@ -6681,7 +6705,7 @@ AcDbText
   0
 TEXT
   5
-C0
+C1
 330
 17
 100
@@ -6713,7 +6737,7 @@ AcDbText
   0
 TEXT
   5
-C1
+C2
 330
 17
 100
@@ -6745,7 +6769,7 @@ AcDbText
   0
 TEXT
   5
-C2
+C3
 330
 17
 100
@@ -6777,7 +6801,7 @@ AcDbText
   0
 TEXT
   5
-C3
+C4
 330
 17
 100
@@ -6809,7 +6833,7 @@ AcDbText
   0
 TEXT
   5
-C4
+C5
 330
 17
 100
@@ -6841,7 +6865,7 @@ AcDbText
   0
 TEXT
   5
-C5
+C6
 330
 17
 100
@@ -6873,7 +6897,7 @@ AcDbText
   0
 TEXT
   5
-C6
+C7
 330
 17
 100
@@ -6905,7 +6929,7 @@ AcDbText
   0
 TEXT
   5
-C7
+C8
 330
 17
 100
@@ -6937,7 +6961,7 @@ AcDbText
   0
 TEXT
   5
-C8
+C9
 330
 17
 100
@@ -6969,7 +6993,7 @@ AcDbText
   0
 TEXT
   5
-C9
+CA
 330
 17
 100
@@ -8089,7 +8113,7 @@ CREATED_BY_EZDXF
   3
 WRITTEN_BY_EZDXF
 350
-CC
+CD
   0
 DICTIONARYVAR
   5
@@ -8805,7 +8829,7 @@ X-Ray
   0
 DICTIONARYVAR
   5
-CC
+CD
 330
 2D
 100

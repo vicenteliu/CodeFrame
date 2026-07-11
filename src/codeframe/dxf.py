@@ -30,6 +30,9 @@ class UnsupportedRoofError(ValueError):
     """The Project Config is valid but the drawing engine can't draw it yet."""
 
 TEXT_HEIGHT = 0.375  # model-space feet; reads as 3/32" at 1/4" = 1'-0"
+ROOM_TEXT_HEIGHT = 0.5625  # room names; reads as 9/64" at 1/4" = 1'-0"
+TITLE_TEXT_HEIGHT = 0.75  # view titles; reads as 3/16" at 1/4" = 1'-0"
+_TEXT_ASPECT = 0.8  # approximate char width / height of the default font
 
 SITE_LAYERS = {
     "C-PROP": {"color": 7, "lineweight": 50},
@@ -105,6 +108,22 @@ def format_feet_inches(feet: float) -> str:
     total_inches = round(feet * 12)
     whole_feet, inches = divmod(total_inches, 12)
     return f"{whole_feet}'-{inches}\""
+
+
+def _format_dim_text(feet: float) -> str:
+    """Feet-inches to the nearest 1/16" for dimension text (5.8125 ->
+    5'-9 3/4"). Dimensions carry exact geometry, so unlike the schedule
+    labels they keep the fractional inch."""
+
+    sixteenths = round(feet * 12 * 16)
+    whole_inches, numerator = divmod(sixteenths, 16)
+    whole_feet, inches = divmod(whole_inches, 12)
+    if numerator:
+        divisor = math.gcd(numerator, 16)
+        fraction = f" {numerator // divisor}/{16 // divisor}"
+    else:
+        fraction = ""
+    return f"{whole_feet}'-{inches}{fraction}\""
 
 
 def _schedule_data(project: ProjectConfig):
@@ -237,20 +256,104 @@ def _add_rectangle(msp, layer: str, x: float, y: float, width: float, depth: flo
     msp.add_lwpolyline(corners, close=True, dxfattribs={"layer": layer})
 
 
-def _add_label(msp, layer: str, text: str, at: tuple[float, float]):
+def _add_label(msp, layer: str, text: str, at: tuple[float, float], height: float = TEXT_HEIGHT):
     msp.add_text(
-        text, dxfattribs={"layer": layer, "height": TEXT_HEIGHT}
+        text, dxfattribs={"layer": layer, "height": height}
     ).set_placement(at, align=TextEntityAlignment.MIDDLE_CENTER)
 
 
-def _add_dim(msp, layer: str, p1: tuple[float, float], p2: tuple[float, float], *, angle: float, base: tuple[float, float]):
-    """Linear dimension between p1 and p2; `base` fixes the dimension line."""
+def _add_underlined_text(
+    msp, layer: str, text: str, at: tuple[float, float], height: float
+) -> None:
+    """Centered text with an underline sized from the font aspect ratio."""
 
+    msp.add_text(
+        text, dxfattribs={"layer": layer, "height": height}
+    ).set_placement(at, align=TextEntityAlignment.MIDDLE_CENTER)
+    half = len(text) * height * _TEXT_ASPECT / 2
+    y = at[1] - 0.7 * height
+    msp.add_line((at[0] - half, y), (at[0] + half, y), dxfattribs={"layer": layer})
+
+
+def _add_view_title(
+    msp, layer: str, title: str, at: tuple[float, float],
+    scale_label: str | None = None,
+) -> None:
+    """Underlined view title with the print scale written beneath it. The
+    scale is only known at sheet-composition time; standalone DXF output
+    (model space, no paper scale) omits the line."""
+
+    _add_underlined_text(msp, layer, title, at, TITLE_TEXT_HEIGHT)
+    if scale_label is not None:
+        _add_label(msp, layer, f"SCALE: {scale_label}", (at[0], at[1] - 1.5))
+
+
+def _add_leader(
+    msp, layer: str, text: str,
+    tail: tuple[float, float], target: tuple[float, float],
+    *, height: float = TEXT_HEIGHT, arrow: float = 0.6,
+) -> None:
+    """Label with a leader arrow: the text sits at the tail, on the side
+    away from the target, and the open arrowhead lands on the target."""
+
+    dx, dy = target[0] - tail[0], target[1] - tail[1]
+    msp.add_line(tail, target, dxfattribs={"layer": layer})
+    back = math.atan2(-dy, -dx)
+    for wing in (math.radians(20), -math.radians(20)):
+        msp.add_line(
+            target,
+            (
+                target[0] + arrow * math.cos(back + wing),
+                target[1] + arrow * math.sin(back + wing),
+            ),
+            dxfattribs={"layer": layer},
+        )
+    gap = 0.8 * height
+    if abs(dx) >= abs(dy):
+        if dx >= 0:
+            at, align = (tail[0] - gap, tail[1]), TextEntityAlignment.MIDDLE_RIGHT
+        else:
+            at, align = (tail[0] + gap, tail[1]), TextEntityAlignment.MIDDLE_LEFT
+    elif dy >= 0:
+        at, align = (tail[0], tail[1] - gap), TextEntityAlignment.TOP_CENTER
+    else:
+        at, align = (tail[0], tail[1] + gap), TextEntityAlignment.BOTTOM_CENTER
+    msp.add_text(
+        text, dxfattribs={"layer": layer, "height": height}
+    ).set_placement(at, align=align)
+
+
+def _add_solid_hatch(msp, layer: str, corners: list[tuple[float, float]]) -> None:
+    """Solid-fill poché for cut walls (drafting convention: walls read as
+    filled bands, lines stay for CAD editing)."""
+
+    hatch = msp.add_hatch(dxfattribs={"layer": layer})
+    hatch.paths.add_polyline_path(corners, is_closed=True)
+
+
+def section_sheet_number(index: int) -> str:
+    """Sheet number the index-th section lands on in the PDF set; the
+    floor plan's section bubbles reference it (single source of truth
+    shared with codeframe.sheets)."""
+
+    return f"A6.{index}"
+
+
+def _add_dim(msp, layer: str, p1: tuple[float, float], p2: tuple[float, float], *, angle: float, base: tuple[float, float]):
+    """Linear dimension between p1 and p2; `base` fixes the dimension line.
+    Text is overridden with the feet-inches convention (8'-6", not 8.5')."""
+
+    radians = math.radians(angle)
+    direction = (math.cos(radians), math.sin(radians))
+    measurement = abs(
+        (p2[0] - p1[0]) * direction[0] + (p2[1] - p1[1]) * direction[1]
+    )
     dim = msp.add_linear_dim(
         base=base,
         p1=p1,
         p2=p2,
         angle=angle,
+        text=_format_dim_text(measurement),
         dimstyle="CODEFRAME",
         dxfattribs={"layer": layer},
     )
@@ -362,7 +465,9 @@ def write_site_plan(project: ProjectConfig, path: Path) -> None:
     _save(build_site_plan(project), path)
 
 
-def build_site_plan(project: ProjectConfig) -> Drawing:
+def build_site_plan(
+    project: ProjectConfig, scale_label: str | None = None
+) -> Drawing:
     doc = _new_document(SITE_LAYERS)
     msp = doc.modelspace()
 
@@ -404,8 +509,12 @@ def build_site_plan(project: ProjectConfig) -> Drawing:
     )
 
     if project.site.north_rotation is not None:
-        _draw_north_arrow(msp, project.site.north_rotation, lot)
+        _draw_north_arrow(
+            msp, "C-ANNO-TEXT", project.site.north_rotation,
+            (lot.width + 6.0, lot.depth - 5.0),
+        )
     _draw_scale_bar(msp)
+    _add_view_title(msp, "C-ANNO-TEXT", "SITE PLAN", (lot.width / 2, -10.0), scale_label)
 
     # Placement dimensions: building face to each lot line, what plan
     # checkers read setbacks from. Measured at the building's right and
@@ -434,28 +543,29 @@ def build_site_plan(project: ProjectConfig) -> Drawing:
     return doc
 
 
-def _draw_north_arrow(msp, north_rotation: float, lot) -> None:
-    """North arrow beside the lot: circle, shaft, arrowhead, N label."""
+def _draw_north_arrow(
+    msp, layer: str, north_rotation: float, center: tuple[float, float]
+) -> None:
+    """North arrow at `center`: circle, shaft, arrowhead, N label."""
 
     radians = math.radians(north_rotation)
     direction = (-math.sin(radians), math.cos(radians))
-    center = (lot.width + 6.0, lot.depth - 5.0)
     radius = 2.0
 
     def along(scale: float) -> tuple[float, float]:
         return (center[0] + direction[0] * scale, center[1] + direction[1] * scale)
 
-    msp.add_circle(center=center, radius=radius, dxfattribs={"layer": "C-ANNO-TEXT"})
+    msp.add_circle(center=center, radius=radius, dxfattribs={"layer": layer})
     tip = along(radius)
-    msp.add_line(along(-radius), tip, dxfattribs={"layer": "C-ANNO-TEXT"})
+    msp.add_line(along(-radius), tip, dxfattribs={"layer": layer})
     for wing in (140, -140):
         wing_radians = math.radians(north_rotation + wing)
         wing_end = (
             tip[0] - math.sin(wing_radians) * 0.8,
             tip[1] + math.cos(wing_radians) * 0.8,
         )
-        msp.add_line(tip, wing_end, dxfattribs={"layer": "C-ANNO-TEXT"})
-    _add_label(msp, "C-ANNO-TEXT", "N", along(radius + 1.2))
+        msp.add_line(tip, wing_end, dxfattribs={"layer": layer})
+    _add_label(msp, layer, "N", along(radius + 1.2))
 
 
 def _draw_scale_bar(msp) -> None:
@@ -500,13 +610,40 @@ def _draw_door(msp, frame, s_start: float, width: float, swing: str, wall_thickn
     )
 
 
+def _draw_section_bubble(
+    msp, name: str, sheet: str,
+    center: tuple[float, float], direction: tuple[float, float],
+) -> None:
+    """Split section bubble: view letter over destination sheet number,
+    plus a filled triangle pointing the view direction."""
+
+    radius = 1.0
+    cx, cy = center
+    msp.add_circle(center=center, radius=radius, dxfattribs={"layer": "A-ANNO-SECT"})
+    msp.add_line(
+        (cx - radius, cy), (cx + radius, cy), dxfattribs={"layer": "A-ANNO-SECT"}
+    )
+    for text, dy in ((name, 0.45), (sheet, -0.45)):
+        msp.add_text(
+            text, dxfattribs={"layer": "A-ANNO-SECT", "height": TEXT_HEIGHT},
+        ).set_placement((cx, cy + dy), align=TextEntityAlignment.MIDDLE_CENTER)
+    ux, uy = direction
+    px, py = -uy, ux
+    apex = (cx + ux * (radius + 0.8), cy + uy * (radius + 0.8))
+    base_1 = (cx + ux * 0.5 + px * 0.7, cy + uy * 0.5 + py * 0.7)
+    base_2 = (cx + ux * 0.5 - px * 0.7, cy + uy * 0.5 - py * 0.7)
+    msp.add_solid([base_1, base_2, apex], dxfattribs={"layer": "A-ANNO-SECT"})
+
+
 def write_floor_plan(project: ProjectConfig, path: Path) -> None:
     """Write the floor plan DXF: walls, openings, room labels, overall dims."""
 
     _save(build_floor_plan(project), path)
 
 
-def build_floor_plan(project: ProjectConfig) -> Drawing:
+def build_floor_plan(
+    project: ProjectConfig, scale_label: str | None = None
+) -> Drawing:
     doc = _new_document(FLOOR_LAYERS)
     msp = doc.modelspace()
 
@@ -530,6 +667,18 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                     frame.point(piece_end, face_d),
                     dxfattribs={"layer": "A-WALL"},
                 )
+
+        # Poché between the faces; front/rear own the corner squares so the
+        # side walls fill between the inner corners without doubling up.
+        if wall_name in ("front", "rear"):
+            hatch_span = (0.0, frame.length)
+        else:
+            hatch_span = (thickness, frame.length - thickness)
+        for piece_start, piece_end in subtract_intervals(hatch_span, cuts):
+            _add_solid_hatch(msp, "A-WALL", [
+                frame.point(piece_start, 0), frame.point(piece_end, 0),
+                frame.point(piece_end, thickness), frame.point(piece_start, thickness),
+            ])
 
         for opening in openings:
             for jamb_s in (opening.offset, opening.offset + opening.width):
@@ -577,6 +726,18 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                         (face, piece_lo), (face, piece_hi),
                         dxfattribs={"layer": "A-WALL-INTR"},
                     )
+        for piece_lo, piece_hi in subtract_intervals((lo, hi), door_cuts):
+            if wall.axis == "x":
+                corners = [
+                    (piece_lo, wall.offset - half), (piece_hi, wall.offset - half),
+                    (piece_hi, wall.offset + half), (piece_lo, wall.offset + half),
+                ]
+            else:
+                corners = [
+                    (wall.offset - half, piece_lo), (wall.offset - half, piece_hi),
+                    (wall.offset + half, piece_hi), (wall.offset + half, piece_lo),
+                ]
+            _add_solid_hatch(msp, "A-WALL-INTR", corners)
         # Interior doors: jambs across the thickness, then leaf and swing.
         # The door frame's s axis runs along the wall, d across it, with d=0
         # on the negative-side face so "in" swings toward the positive side.
@@ -624,16 +785,27 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                 angle=0, base=(span[0], station),
             )
 
+    # Room names read a tier above the annotation text: larger, underlined,
+    # uppercase, with the stated area beneath.
     for room in project.rooms:
-        _add_label(msp, "A-ANNO-TEXT", room.name, (room.label_at.x, room.label_at.y))
+        _add_underlined_text(
+            msp, "A-ANNO-TEXT", room.name.upper(),
+            (room.label_at.x, room.label_at.y), ROOM_TEXT_HEIGHT,
+        )
         if room.area is not None:
             _add_label(
                 msp, "A-ANNO-TEXT", f"{room.area:g} SF",
-                (room.label_at.x, room.label_at.y - 1.0),
+                (room.label_at.x, room.label_at.y - 1.4),
             )
 
     for fixture in project.fixtures:
         _draw_fixture(msp, fixture)
+
+    for callout in project.callouts:
+        _add_leader(
+            msp, "A-ANNO-TEXT", callout.text.upper(),
+            (callout.at.x, callout.at.y), (callout.target.x, callout.target.y),
+        )
 
     for detector in project.detectors:
         at = (detector.at.x, detector.at.y)
@@ -643,20 +815,24 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
             dxfattribs={"layer": "A-FIRE", "height": TEXT_HEIGHT},
         ).set_placement(at, align=TextEntityAlignment.MIDDLE_CENTER)
 
-    # Section cut lines run across the plan, bubbled at both ends.
-    for cut in project.sections:
+    # Section cut lines run across the plan, bubbled at both ends. Each
+    # bubble is split — view letter over destination sheet — with a filled
+    # triangle pointing the view direction (toward the rising ridge-axis
+    # coordinate, matching build_section).
+    for index, cut in enumerate(project.sections):
         if building.roof.ridge_axis == "y":
             ends = [(-5.0, cut.at), (footprint.width + 5.0, cut.at)]
-            bubbles = [(-5.8, cut.at), (footprint.width + 5.8, cut.at)]
+            bubbles = [(-6.2, cut.at), (footprint.width + 6.2, cut.at)]
+            direction = (0.0, 1.0)
         else:
             ends = [(cut.at, -5.0), (cut.at, footprint.depth + 5.0)]
-            bubbles = [(cut.at, -5.8), (cut.at, footprint.depth + 5.8)]
+            bubbles = [(cut.at, -6.2), (cut.at, footprint.depth + 6.2)]
+            direction = (1.0, 0.0)
         msp.add_line(*ends, dxfattribs={"layer": "A-ANNO-SECT"})
         for bubble in bubbles:
-            msp.add_circle(center=bubble, radius=0.7, dxfattribs={"layer": "A-ANNO-SECT"})
-            msp.add_text(
-                cut.name, dxfattribs={"layer": "A-ANNO-SECT", "height": TEXT_HEIGHT},
-            ).set_placement(bubble, align=TextEntityAlignment.MIDDLE_CENTER)
+            _draw_section_bubble(
+                msp, cut.name, section_sheet_number(index), bubble, direction
+            )
 
     # Opening location chains: corner -> jamb -> jamb -> corner along each
     # exterior wall that has openings, one dimension row outside the face.
@@ -685,6 +861,8 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
                     angle=angle, base=base,
                 )
 
+    # Overall dims: always on front and left, plus any other side that
+    # carries an opening chain (references dimension every worked side).
     _add_dim(
         msp, "A-ANNO-DIMS", (0, 0), (footprint.width, 0),
         angle=0, base=(0, -3.75),
@@ -692,6 +870,32 @@ def build_floor_plan(project: ProjectConfig) -> Drawing:
     _add_dim(
         msp, "A-ANNO-DIMS", (0, 0), (0, footprint.depth),
         angle=90, base=(-3.75, 0),
+    )
+    walls_with_openings = {opening.wall for opening in project.openings}
+    if "rear" in walls_with_openings:
+        _add_dim(
+            msp, "A-ANNO-DIMS", (0, footprint.depth), (footprint.width, footprint.depth),
+            angle=0, base=(0, footprint.depth + 3.75),
+        )
+    if "right" in walls_with_openings:
+        _add_dim(
+            msp, "A-ANNO-DIMS", (footprint.width, 0), (footprint.width, footprint.depth),
+            angle=90, base=(footprint.width + 3.75, 0),
+        )
+
+    if project.site.north_rotation is not None:
+        _draw_north_arrow(
+            msp, "A-ANNO-TEXT", project.site.north_rotation,
+            (footprint.width + 7.0, footprint.depth + 6.0),
+        )
+    # An x-ridge section runs vertically and bubbles below the plan; drop
+    # the title clear of it.
+    if project.sections and building.roof.ridge_axis == "x":
+        title_y = -9.0
+    else:
+        title_y = -6.0
+    _add_view_title(
+        msp, "A-ANNO-TEXT", "FLOOR PLAN", (footprint.width / 2, title_y), scale_label
     )
 
     return doc
@@ -705,13 +909,36 @@ def _require_gable(roof: Roof) -> None:
         )
 
 
+def _add_slope_marker(
+    msp, slope: str, eave: tuple[float, float], apex: tuple[float, float]
+) -> None:
+    """Roof pitch symbol riding the left roof slope: a right triangle with
+    the horizontal run labeled 12 and the vertical leg labeled with the rise."""
+
+    rise = parse_slope(slope)
+    run = 2.0
+    x0 = (eave[0] + apex[0]) / 2 - run / 2
+    p0 = (x0, eave[1] + (x0 - eave[0]) * rise + 1.0)
+    p1 = (p0[0] + run, p0[1])
+    p2 = (p1[0], p1[1] + run * rise)
+    for a, b in ((p0, p1), (p1, p2), (p2, p0)):
+        msp.add_line(a, b, dxfattribs={"layer": "A-ANNO-TEXT"})
+    _add_label(msp, "A-ANNO-TEXT", "12", (p0[0] + run / 2, p0[1] - 0.55))
+    _add_label(
+        msp, "A-ANNO-TEXT", slope.split(":")[0],
+        (p1[0] + 0.55, (p1[1] + p2[1]) / 2),
+    )
+
+
 def write_elevation(project: ProjectConfig, wall: str, path: Path) -> None:
     """Write one elevation DXF, drawn as seen from outside `wall`."""
 
     _save(build_elevation(project, wall), path)
 
 
-def build_elevation(project: ProjectConfig, wall: str) -> Drawing:
+def build_elevation(
+    project: ProjectConfig, wall: str, scale_label: str | None = None
+) -> Drawing:
     building = project.building
     roof = building.roof
     _require_gable(roof)
@@ -742,6 +969,7 @@ def build_elevation(project: ProjectConfig, wall: str) -> Drawing:
         apex = (length / 2, ridge_z)
         msp.add_line((-overhang, eave_z), apex, dxfattribs={"layer": "A-ROOF"})
         msp.add_line(apex, (length + overhang, eave_z), dxfattribs={"layer": "A-ROOF"})
+        _add_slope_marker(msp, roof.slope, (-overhang, eave_z), apex)
     else:
         for z in (eave_z, ridge_z):
             msp.add_line(
@@ -774,7 +1002,10 @@ def build_elevation(project: ProjectConfig, wall: str) -> Drawing:
         (-overhang - 3, 0), (length + overhang + 3, 0), dxfattribs={"layer": "A-ELEV"}
     )
 
-    _add_label(msp, "A-ANNO-TEXT", f"{wall.upper()} ELEVATION", (length / 2, -2.5))
+    _add_view_title(
+        msp, "A-ANNO-TEXT", f"{wall.upper()} ELEVATION", (length / 2, -2.5),
+        scale_label,
+    )
     _add_dim(
         msp, "A-ANNO-DIMS", (0, 0), (0, wall_height),
         angle=90, base=(-overhang - 1.75, 0),
@@ -793,7 +1024,9 @@ def write_foundation_plan(project: ProjectConfig, path: Path) -> None:
     _save(build_foundation_plan(project), path)
 
 
-def build_foundation_plan(project: ProjectConfig) -> Drawing:
+def build_foundation_plan(
+    project: ProjectConfig, scale_label: str | None = None
+) -> Drawing:
     building = project.building
     foundation = building.foundation
     assert foundation is not None, "caller checks building.foundation"
@@ -858,7 +1091,7 @@ def build_foundation_plan(project: ProjectConfig) -> Drawing:
     _add_dim(
         msp, "A-ANNO-DIMS", (0, 0), (0, depth), angle=90, base=(-3, 0),
     )
-    _add_label(msp, "A-ANNO-TEXT", "FOUNDATION PLAN", (width / 2, -5.5))
+    _add_view_title(msp, "A-ANNO-TEXT", "FOUNDATION PLAN", (width / 2, -5.5), scale_label)
 
     # Notes block beside the plan.
     notes = [
@@ -896,6 +1129,15 @@ def write_roof_framing_plan(project: ProjectConfig, path: Path) -> None:
     _save(build_roof_framing_plan(project), path)
 
 
+def _framing_callout(framing) -> str:
+    """Member callout text ("2x8 DF #2 RAFTERS @ 24\" O.C.")."""
+
+    spacing_inches = framing.spacing * 12
+    member_name = "RAFTERS" if framing.member == "rafter" else "TRUSSES"
+    grade = f" {framing.species_grade}" if framing.species_grade else ""
+    return f"{framing.size}{grade} {member_name} @ {spacing_inches:g}\" O.C."
+
+
 def _framing_stations(length: float, spacing: float) -> list[float]:
     """Member stations at `spacing` o.c. plus a closing member at the end."""
 
@@ -908,7 +1150,9 @@ def _framing_stations(length: float, spacing: float) -> list[float]:
     return stations
 
 
-def build_roof_framing_plan(project: ProjectConfig) -> Drawing:
+def build_roof_framing_plan(
+    project: ProjectConfig, scale_label: str | None = None
+) -> Drawing:
     building = project.building
     roof = building.roof
     framing = roof.framing
@@ -949,10 +1193,7 @@ def build_roof_framing_plan(project: ProjectConfig) -> Drawing:
             )
 
     # Member callout with a span arrow perpendicular to the ridge.
-    spacing_inches = framing.spacing * 12
-    member_name = "RAFTERS" if framing.member == "rafter" else "TRUSSES"
-    grade = f" {framing.species_grade}" if framing.species_grade else ""
-    callout = f"{framing.size}{grade} {member_name} @ {spacing_inches:g}\" O.C."
+    callout = _framing_callout(framing)
     if ridge_is_y:
         arrow = ((width / 2 + 2, depth / 2), (width - 2, depth / 2))
         label_at = (3 * width / 4, depth / 2 + 1.5)
@@ -977,7 +1218,7 @@ def build_roof_framing_plan(project: ProjectConfig) -> Drawing:
 
     _add_dim(msp, "A-ANNO-DIMS", (0, 0), (width, 0), angle=0, base=(0, -3))
     _add_dim(msp, "A-ANNO-DIMS", (0, 0), (0, depth), angle=90, base=(-3, 0))
-    _add_label(msp, "A-ANNO-TEXT", "ROOF FRAMING PLAN", (width / 2, -5.5))
+    _add_view_title(msp, "A-ANNO-TEXT", "ROOF FRAMING PLAN", (width / 2, -5.5), scale_label)
 
     notes = [
         "MEMBER SPANS: VERIFY PER CRC TABLES R802.4.1(1)-(9).",
@@ -1030,6 +1271,7 @@ GENERAL_NOTES: list[list[str]] = [
 ]
 
 NOTES_LAYERS = {
+    "A-ANNO-TABL": {"color": 7, "lineweight": 25},
     "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
 }
 
@@ -1094,6 +1336,21 @@ def build_general_notes(project: ProjectConfig) -> Drawing:
         cursor -= 0.4
         for number, note in enumerate(project.notes, start=1):
             emit(f"{number}. {note.upper()}", indent=1.0)
+
+    # Area summary: stated room areas only (rooms are label points; the
+    # core never computes areas). Plan checkers read it against ADU limits.
+    areas = [
+        (room.name.upper(), room.area)
+        for room in project.rooms
+        if room.area is not None
+    ]
+    if areas:
+        rows = [(name, f"{area:g}") for name, area in areas]
+        rows.append(("TOTAL", f"{sum(area for _name, area in areas):g}"))
+        _draw_table(
+            msp, "AREA SUMMARY", ["ROOM", "AREA (SF)"], rows,
+            (1.0, cursor - 2.5), col_widths=[14.0, 7.0],
+        )
 
     return doc
 
@@ -1181,6 +1438,20 @@ def _compliance_rows(project: ProjectConfig) -> list[tuple]:
             "OK*",
         ))
 
+    # R303 light/vent: total glazing is arithmetic on stated openings; the
+    # per-room split (and operable fraction) stays the Drafter's.
+    total_glazing = sum(
+        o.width * o.height for o in project.openings if o.type == "window"
+    )
+    rows.append((
+        "LIGHT (GLAZING)", "R303.1", "8% OF FLOOR AREA PER HABITABLE ROOM",
+        f"{total_glazing:g} SF TOTAL GLAZING SHOWN", "BY DRAFTER",
+    ))
+    rows.append((
+        "VENTILATION", "R303.1", "4% OPENABLE PER HABITABLE ROOM",
+        "OPENABLE AREA PER WINDOW TYPE", "BY DRAFTER",
+    ))
+
     smoke = sum(1 for d in project.detectors if d.type in ("smoke", "combo"))
     co = sum(1 for d in project.detectors if d.type in ("co", "combo"))
     rows.append((
@@ -1229,6 +1500,7 @@ def write_schedules(project: ProjectConfig, path: Path) -> None:
 
 
 _SCHEDULE_COLS = [3.0, 4.5, 4.5, 5.5, 3.0, 5.0]
+_WINDOW_SCHEDULE_COLS = [3.0, 4.5, 4.5, 5.5, 4.5, 3.0, 5.0]
 _SCHEDULE_ROW_H = 1.5
 
 
@@ -1272,9 +1544,11 @@ def build_schedules(project: ProjectConfig) -> Drawing:
         (mark, format_feet_inches(w), format_feet_inches(h), kind, count, "")
         for mark, w, h, kind, count in door_rows
     ]
+    # Glazed area per mark: plan checkers read it against CRC R303
+    # light/vent minimums, so the window schedule carries it.
     window_cells = [
         (mark, format_feet_inches(w), format_feet_inches(h), f"SILL {sill}",
-         count, "EGRESS" if egress else "")
+         f"{w * h:g} SF", count, "EGRESS" if egress else "")
         for mark, w, h, sill, count, egress in window_rows
     ]
 
@@ -1284,8 +1558,8 @@ def build_schedules(project: ProjectConfig) -> Drawing:
     )
     _draw_table(
         msp, "WINDOW SCHEDULE",
-        ["MARK", "WIDTH", "HEIGHT", "SILL", "QTY", "REMARKS"], window_cells,
-        (0.0, bottom - 3.5),
+        ["MARK", "WIDTH", "HEIGHT", "SILL", "AREA", "QTY", "REMARKS"], window_cells,
+        (0.0, bottom - 3.5), col_widths=_WINDOW_SCHEDULE_COLS,
     )
     return doc
 
@@ -1296,7 +1570,9 @@ def write_section(project: ProjectConfig, section: SectionCut, path: Path) -> No
     _save(build_section(project, section), path)
 
 
-def build_section(project: ProjectConfig, section: SectionCut) -> Drawing:
+def build_section(
+    project: ProjectConfig, section: SectionCut, scale_label: str | None = None
+) -> Drawing:
     building = project.building
     roof = building.roof
     _require_gable(roof)
@@ -1328,6 +1604,10 @@ def build_section(project: ProjectConfig, section: SectionCut) -> Drawing:
     )
     for band_lo in (0.0, span - thickness):
         _add_rectangle(msp, "A-WALL", band_lo, 0, thickness, wall_height)
+        _add_solid_hatch(msp, "A-WALL", [
+            (band_lo, 0), (band_lo + thickness, 0),
+            (band_lo + thickness, wall_height), (band_lo, wall_height),
+        ])
 
     # Interior walls crossed by the cut plane.
     crossing_axis = "y" if ridge_is_y else "x"
@@ -1337,16 +1617,21 @@ def build_section(project: ProjectConfig, section: SectionCut) -> Drawing:
         half = wall.thickness / 2
         lo = min(h(wall.offset - half), h(wall.offset + half))
         _add_rectangle(msp, "A-WALL-INTR", lo, 0, wall.thickness, wall_height)
+        _add_solid_hatch(msp, "A-WALL-INTR", [
+            (lo, 0), (lo + wall.thickness, 0),
+            (lo + wall.thickness, wall_height), (lo, wall_height),
+        ])
 
     # Ceiling line at the plate, then the roof profile up to the ridge.
     msp.add_line((0, wall_height), (span, wall_height), dxfattribs={"layer": "A-ROOF"})
     apex = (span / 2, ridge_z)
     msp.add_line((-overhang, eave_z), apex, dxfattribs={"layer": "A-ROOF"})
     msp.add_line(apex, (span + overhang, eave_z), dxfattribs={"layer": "A-ROOF"})
+    _add_slope_marker(msp, roof.slope, (-overhang, eave_z), apex)
 
-    _add_label(
+    _add_view_title(
         msp, "A-ANNO-TEXT",
-        f"SECTION {section.name}-{section.name}", (span / 2, -2.5),
+        f"SECTION {section.name}-{section.name}", (span / 2, -2.5), scale_label,
     )
     _add_dim(
         msp, "A-ANNO-DIMS", (0, 0), (0, wall_height),
@@ -1365,7 +1650,9 @@ def write_roof_plan(project: ProjectConfig, path: Path) -> None:
     _save(build_roof_plan(project), path)
 
 
-def build_roof_plan(project: ProjectConfig) -> Drawing:
+def build_roof_plan(
+    project: ProjectConfig, scale_label: str | None = None
+) -> Drawing:
     building = project.building
     roof = building.roof
     _require_gable(roof)
@@ -1400,6 +1687,372 @@ def build_roof_plan(project: ProjectConfig) -> Drawing:
     for point in slope_points:
         _add_label(msp, "A-ANNO-TEXT", roof.slope, point)
 
-    _add_label(msp, "A-ANNO-TEXT", "ROOF PLAN", (width / 2, -overhang - 2.5))
+    _add_view_title(
+        msp, "A-ANNO-TEXT", "ROOF PLAN", (width / 2, -overhang - 2.5), scale_label
+    )
 
+    return doc
+
+
+# --- Typical details (sheet S3) -----------------------------------------
+#
+# Prescriptive connection / footing / header details drawn from stated
+# config values. Geometry is representative (member depths are drawn at a
+# nominal size); every structural size CodeFrame does not know is called
+# out BY DRAFTER with its CRC reference. The sheet renders at a fixed
+# detail scale, so detail annotation uses its own text height.
+
+DETAIL_SCALE_LABEL = "1\" = 1'-0\""
+DETAIL_TEXT_HEIGHT = 0.09375  # reads as 3/32" at 1" = 1'-0"
+
+DETAIL_LAYERS = {
+    "S-DETL": {"color": 7, "lineweight": 35},
+    "S-DETL-FINE": {"color": 8, "lineweight": 18},
+    "S-DETL-HIDN": {"color": 8, "lineweight": 13, "linetype": "DASHED"},
+    "S-DETL-PATT": {"color": 8, "lineweight": 13},
+    "A-ANNO-TEXT": {"color": 7, "lineweight": 18},
+}
+
+# Details fill these cells in order: three across the top row, two below.
+_DETAIL_POSITIONS = [(0.0, 0.0), (9.0, 0.0), (18.0, 0.0), (0.0, -9.0), (9.0, -9.0)]
+
+
+def _add_earth_hatch(
+    msp, layer: str, x0: float, y0: float, x1: float, y1: float
+) -> None:
+    """Earth poché: 45-degree lines clipped to a rectangle. Drawn as plain
+    lines, not a HATCH pattern fill — ezdxf's pattern renderer emits lines
+    in a nondeterministic order, which breaks byte-identical PDFs."""
+
+    step = 0.17 * math.sqrt(2)
+    start = y0 - x1
+    count = int((y1 - x0 - start) / step)
+    for index in range(count + 1):
+        c = start + index * step
+        from_x = max(x0, y0 - c)
+        to_x = min(x1, y1 - c)
+        if to_x > from_x:
+            msp.add_line(
+                (from_x, from_x + c), (to_x, to_x + c), dxfattribs={"layer": layer}
+            )
+
+
+def _break_symbol(msp, start: tuple[float, float], end: tuple[float, float]) -> None:
+    """Zigzag cut mark across a member that continues beyond the detail."""
+
+    (x0, y0), (x1, y1) = start, end
+    dx, dy = x1 - x0, y1 - y0
+    length = math.hypot(dx, dy)
+    px, py = -dy / length * 0.1, dx / length * 0.1
+    msp.add_lwpolyline(
+        [
+            start,
+            (x0 + dx * 0.4 + px, y0 + dy * 0.4 + py),
+            (x0 + dx * 0.6 - px, y0 + dy * 0.6 - py),
+            end,
+        ],
+        dxfattribs={"layer": "S-DETL"},
+    )
+
+
+def _detail_leader(msp, text: str, tail, target) -> None:
+    _add_leader(
+        msp, "A-ANNO-TEXT", text, tail, target,
+        height=DETAIL_TEXT_HEIGHT, arrow=0.15,
+    )
+
+
+def _add_detail_title(msp, number: int, title: str, at: tuple[float, float]) -> None:
+    """Detail marker: circled number, underlined title, detail scale."""
+
+    x, y = at
+    radius = 0.3
+    height = DETAIL_TEXT_HEIGHT * 1.4
+    msp.add_circle(center=(x, y), radius=radius, dxfattribs={"layer": "A-ANNO-TEXT"})
+    msp.add_text(
+        str(number), dxfattribs={"layer": "A-ANNO-TEXT", "height": height}
+    ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+    center_x = x + radius + 0.25 + len(title) * height * _TEXT_ASPECT / 2
+    _add_underlined_text(msp, "A-ANNO-TEXT", title, (center_x, y), height)
+    _add_label(
+        msp, "A-ANNO-TEXT", f"SCALE: {DETAIL_SCALE_LABEL}",
+        (center_x, y - 0.45), height=DETAIL_TEXT_HEIGHT,
+    )
+
+
+def _detail_exterior_footing(msp, thickness: float, foundation, number: int, origin) -> None:
+    """Monolithic slab edge: turned-down footing, sill, anchor bolt, wall."""
+
+    ox, oy = origin
+
+    def P(x: float, y: float) -> tuple[float, float]:
+        return (ox + x, oy + y)
+
+    fw, fd = foundation.footing_width, foundation.footing_depth
+    ts = foundation.slab_thickness_inches / 12
+    x_left = thickness / 2 - fw / 2
+    x_right = x_left + fw
+    interior = 3.5
+
+    # Concrete profile: slab top, turned-down edge, footing, slab underside.
+    msp.add_lwpolyline(
+        [
+            P(interior, 0), P(x_left, 0), P(x_left, -fd),
+            P(x_right, -fd), P(x_right, -ts), P(interior, -ts),
+        ],
+        close=True, dxfattribs={"layer": "S-DETL"},
+    )
+    # Grade at the exterior face with earth poché below.
+    msp.add_line(P(x_left - 2.4, -0.5), P(x_left, -0.5), dxfattribs={"layer": "S-DETL"})
+    _add_earth_hatch(
+        msp, "S-DETL-PATT", ox + x_left - 2.4, oy - fd, ox + x_left, oy - 0.5
+    )
+    # Base course (solid) and vapor retarder (hidden) under the slab.
+    msp.add_line(P(x_right, -ts - 0.33), P(interior, -ts - 0.33), dxfattribs={"layer": "S-DETL-FINE"})
+    msp.add_line(P(x_right, -ts - 0.05), P(interior, -ts - 0.05), dxfattribs={"layer": "S-DETL-HIDN"})
+    for bar_y in (-ts - 0.15, -fd + 0.15):
+        msp.add_circle(center=P(thickness / 2, bar_y), radius=0.045, dxfattribs={"layer": "S-DETL-FINE"})
+    # PT sill on the slab, anchor bolt with hook, stud wall broken above.
+    _add_rectangle(msp, "S-DETL-FINE", ox, oy, thickness, 0.125)
+    msp.add_line(P(thickness / 2, 0.125), P(thickness / 2, -0.58), dxfattribs={"layer": "S-DETL-FINE"})
+    msp.add_line(P(thickness / 2, -0.58), P(thickness / 2 + 0.1, -0.58), dxfattribs={"layer": "S-DETL-FINE"})
+    msp.add_line(P(0, 0.125), P(0, 2.1), dxfattribs={"layer": "S-DETL"})
+    msp.add_line(P(thickness, 0.125), P(thickness, 2.1), dxfattribs={"layer": "S-DETL"})
+    _break_symbol(msp, P(0, 2.1), P(thickness, 2.1))
+
+    _detail_leader(msp, "2x STUD WALL", P(1.9, 1.7), P(thickness, 1.5))
+    _detail_leader(msp, "PT SILL PLATE (R317)", P(-1.2, 1.0), P(thickness * 0.25, 0.07))
+    _detail_leader(
+        msp, "1/2\" DIA A.B. @ 6'-0\" O.C. MAX, 7\" EMBED (R403.1.6)",
+        P(1.9, 1.1), P(thickness / 2 + 0.02, -0.2),
+    )
+    _detail_leader(
+        msp,
+        f"{foundation.slab_thickness_inches:g}\" SLAB OVER "
+        f"{foundation.vapor_retarder_mil}-MIL VAPOR RETARDER OVER 4\" BASE",
+        P(2.2, -1.2), P(2.0, -ts - 0.05),
+    )
+    _detail_leader(
+        msp, "(1) #4 TOP & (1) #4 BOT (R403.1.3)",
+        P(2.4, -fd - 0.6), P(thickness / 2 + 0.05, -fd + 0.15),
+    )
+    _add_label(
+        msp, "A-ANNO-TEXT",
+        f"{format_feet_inches(fw)} W x {format_feet_inches(fd)} D FOOTING",
+        P(0, -fd - 1.1), height=DETAIL_TEXT_HEIGHT,
+    )
+    _add_detail_title(msp, number, "EXTERIOR FOOTING AT SLAB EDGE", P(-2.4, -3.2))
+
+
+def _detail_interior_footing(msp, wall_thickness: float, foundation, number: int, origin) -> None:
+    """Thickened slab under an interior bearing wall."""
+
+    ox, oy = origin
+
+    def P(x: float, y: float) -> tuple[float, float]:
+        return (ox + x, oy + y)
+
+    fw, fd = foundation.footing_width, foundation.footing_depth
+    ts = foundation.slab_thickness_inches / 12
+    half = wall_thickness / 2
+
+    msp.add_lwpolyline(
+        [
+            P(-2.4, 0), P(2.4, 0), P(2.4, -ts), P(fw / 2, -ts),
+            P(fw / 2, -fd), P(-fw / 2, -fd), P(-fw / 2, -ts), P(-2.4, -ts),
+        ],
+        close=True, dxfattribs={"layer": "S-DETL"},
+    )
+    _add_rectangle(msp, "S-DETL-FINE", ox - half, oy, wall_thickness, 0.125)
+    msp.add_line(P(0, 0.125), P(0, -0.58), dxfattribs={"layer": "S-DETL-FINE"})
+    msp.add_line(P(0, -0.58), P(0.1, -0.58), dxfattribs={"layer": "S-DETL-FINE"})
+    msp.add_line(P(-half, 0.125), P(-half, 1.9), dxfattribs={"layer": "S-DETL"})
+    msp.add_line(P(half, 0.125), P(half, 1.9), dxfattribs={"layer": "S-DETL"})
+    _break_symbol(msp, P(-half, 1.9), P(half, 1.9))
+    for bar_y in (-ts - 0.15, -fd + 0.15):
+        msp.add_circle(center=P(0, bar_y), radius=0.045, dxfattribs={"layer": "S-DETL-FINE"})
+
+    _detail_leader(msp, "INTERIOR BEARING WALL", P(1.8, 1.5), P(half, 1.3))
+    _detail_leader(msp, "PT SILL + A.B. PER R403.1.6", P(1.8, 0.9), P(half * 0.5, 0.07))
+    _detail_leader(
+        msp, "(1) #4 TOP & (1) #4 BOT", P(1.9, -fd - 0.6), P(0.05, -fd + 0.15)
+    )
+    _add_label(
+        msp, "A-ANNO-TEXT",
+        f"{format_feet_inches(fw)} W x {format_feet_inches(fd)} D THICKENED SLAB",
+        P(0, -fd - 1.1), height=DETAIL_TEXT_HEIGHT,
+    )
+    _add_detail_title(msp, number, "INTERIOR BEARING FOOTING", P(-2.4, -3.2))
+
+
+def _detail_eave(msp, building, framing, number: int, origin) -> None:
+    """Member-to-plate connection at the eave, overhang per config."""
+
+    ox, oy = origin
+
+    def P(x: float, y: float) -> tuple[float, float]:
+        return (ox + x, oy + y)
+
+    thickness = building.exterior_wall_thickness
+    rise = parse_slope(building.roof.slope)
+    overhang = building.roof.overhang
+    depth = 0.65  # representative member depth; the callout is authoritative
+    ridge_x = thickness + 2.6
+
+    msp.add_line(P(0, -2.1), P(0, -0.25), dxfattribs={"layer": "S-DETL"})
+    msp.add_line(P(thickness, -2.1), P(thickness, -0.25), dxfattribs={"layer": "S-DETL"})
+    _break_symbol(msp, P(0, -2.1), P(thickness, -2.1))
+    _add_rectangle(msp, "S-DETL-FINE", ox, oy - 0.25, thickness, 0.125)
+    _add_rectangle(msp, "S-DETL-FINE", ox, oy - 0.125, thickness, 0.125)
+
+    # Underside with birdsmouth (seat across the plate, plumb heel cut),
+    # then the parallel top edge and the tail plumb cut at the overhang.
+    msp.add_lwpolyline(
+        [
+            P(-overhang, -overhang * rise), P(0, 0), P(thickness, 0),
+            P(thickness, thickness * rise), P(ridge_x, ridge_x * rise),
+        ],
+        dxfattribs={"layer": "S-DETL"},
+    )
+    msp.add_line(
+        P(-overhang, -overhang * rise + depth), P(ridge_x, ridge_x * rise + depth),
+        dxfattribs={"layer": "S-DETL"},
+    )
+    msp.add_line(
+        P(-overhang, -overhang * rise), P(-overhang, -overhang * rise + depth),
+        dxfattribs={"layer": "S-DETL"},
+    )
+    _break_symbol(
+        msp, P(ridge_x, ridge_x * rise), P(ridge_x, ridge_x * rise + depth)
+    )
+
+    _detail_leader(
+        msp, _framing_callout(framing), P(3.4, 2.4), P(2.0, 2.0 * rise + depth)
+    )
+    _detail_leader(msp, "SOLID BLOCKING (R802.8)", P(3.2, 0.35), P(thickness + 0.2, 0.2))
+    _detail_leader(
+        msp, "UPLIFT CONNECTOR (R802.11) - BY DRAFTER",
+        P(3.4, -0.6), P(thickness + 0.05, -0.05),
+    )
+    _detail_leader(msp, "DBL 2x TOP PLATE", P(-1.1, -1.0), P(0.05, -0.19))
+    _detail_leader(msp, "2x STUD WALL", P(-1.1, -1.6), P(0, -1.4))
+    _add_detail_title(msp, number, "EAVE CONNECTION AT TOP PLATE", P(-2.4, -3.2))
+
+
+def _detail_ridge(msp, roof, framing, number: int, origin) -> None:
+    """Rafter pair on a ridge board with collar ties (rafter roofs only —
+    truss connections belong to the deferred truss package)."""
+
+    ox, oy = origin
+
+    def P(x: float, y: float) -> tuple[float, float]:
+        return (ox + x, oy + y)
+
+    rise = parse_slope(roof.slope)
+    depth = 0.65
+    half = 0.0625  # half of a 1.5 in ridge board
+
+    _add_rectangle(msp, "S-DETL", ox - half, oy - 0.9, 2 * half, 0.9)
+    for side in (1, -1):
+        outer = side * 2.5
+        drop = rise * (2.5 - half)
+        msp.add_line(P(side * half, 0), P(outer, -drop), dxfattribs={"layer": "S-DETL"})
+        msp.add_line(
+            P(side * half, -depth), P(outer, -drop - depth),
+            dxfattribs={"layer": "S-DETL"},
+        )
+        msp.add_line(P(side * half, 0), P(side * half, -depth), dxfattribs={"layer": "S-DETL"})
+        _break_symbol(msp, P(outer, -drop), P(outer, -drop - depth))
+    _add_rectangle(msp, "S-DETL-FINE", ox - 1.6, oy - 0.92, 3.2, 0.12)
+
+    ridge_text = framing.ridge if framing.ridge else "RIDGE BOARD - BY DRAFTER"
+    _detail_leader(msp, ridge_text, P(2.4, 0.5), P(half, -0.2))
+    _detail_leader(msp, _framing_callout(framing), P(2.6, -2.0), P(1.5, -1.0))
+    _detail_leader(msp, "COLLAR TIES PER R802.4.6", P(2.5, -1.5), P(1.2, -0.86))
+    _add_label(
+        msp, "A-ANNO-TEXT", "RAFTER TIES OR CEILING JOISTS PER R802.5.2",
+        P(0, -2.6), height=DETAIL_TEXT_HEIGHT,
+    )
+    _add_detail_title(msp, number, "RIDGE CONNECTION", P(-2.4, -3.2))
+
+
+def _detail_header(msp, number: int, origin) -> None:
+    """Typical opening frame: king + trimmer studs, header, cripples."""
+
+    ox, oy = origin
+
+    def P(x: float, y: float) -> tuple[float, float]:
+        return (ox + x, oy + y)
+
+    for side in (-1, 1):
+        king_x = side * 1.5 - (0.125 if side > 0 else 0)
+        trimmer_x = side * 1.375 - (0.125 if side > 0 else 0)
+        _add_rectangle(msp, "S-DETL", ox + king_x, oy, 0.125, 3.0)
+        _add_rectangle(msp, "S-DETL", ox + trimmer_x, oy, 0.125, 2.2)
+        _break_symbol(msp, P(side * 1.5, 0), P(side * 1.25, 0))
+    _add_rectangle(msp, "S-DETL", ox - 1.375, oy + 2.2, 2.75, 0.5)
+    msp.add_line(P(-1.375, 2.2), P(1.375, 2.7), dxfattribs={"layer": "S-DETL-FINE"})
+    msp.add_line(P(-1.375, 2.7), P(1.375, 2.2), dxfattribs={"layer": "S-DETL-FINE"})
+    for cripple_x in (-0.7, 0.0, 0.7):
+        _add_rectangle(msp, "S-DETL-FINE", ox + cripple_x - 0.0625, oy + 2.7, 0.125, 0.7)
+    _break_symbol(msp, P(-1.5, 3.4), P(1.5, 3.4))
+
+    _detail_leader(
+        msp, "HEADER PER CRC TABLE R602.7 - SIZE BY DRAFTER",
+        P(2.6, 3.0), P(1.0, 2.45),
+    )
+    _detail_leader(msp, "KING STUD + TRIMMER EACH SIDE", P(2.4, 1.2), P(1.31, 1.0))
+    _detail_leader(msp, "CRIPPLES TO TOP PLATE", P(2.5, 3.7), P(0.72, 3.05))
+    _add_label(
+        msp, "A-ANNO-TEXT", "FLASH EXTERIOR OPENINGS PER R703.4",
+        P(0, -0.6), height=DETAIL_TEXT_HEIGHT,
+    )
+    _add_detail_title(msp, number, "TYPICAL HEADER AT OPENING", P(-2.4, -3.2))
+
+
+def write_details(project: ProjectConfig, path: Path) -> None:
+    """Write the typical details DXF (sheet S3)."""
+
+    _save(build_details(project), path)
+
+
+def build_details(project: ProjectConfig) -> Drawing:
+    building = project.building
+    foundation = building.foundation
+    framing = building.roof.framing
+
+    doc = _new_document(DETAIL_LAYERS)
+    msp = doc.modelspace()
+
+    details = []
+    if foundation is not None:
+        details.append(
+            lambda n, at: _detail_exterior_footing(
+                msp, building.exterior_wall_thickness, foundation, n, at
+            )
+        )
+        bearing = [wall for wall in project.interior_walls if wall.bearing]
+        if bearing:
+            details.append(
+                lambda n, at, wall=bearing[0]: _detail_interior_footing(
+                    msp, wall.thickness, foundation, n, at
+                )
+            )
+    if framing is not None:
+        details.append(lambda n, at: _detail_eave(msp, building, framing, n, at))
+        if framing.member == "rafter":
+            details.append(
+                lambda n, at: _detail_ridge(msp, building.roof, framing, n, at)
+            )
+    details.append(lambda n, at: _detail_header(msp, n, at))
+
+    for index, draw in enumerate(details):
+        draw(index + 1, _DETAIL_POSITIONS[index])
+
+    note_y = -13.6 if len(details) > 3 else -4.8
+    msp.add_text(
+        "ALL CONNECTOR MODELS, MEMBER SIZES, AND EMBEDMENTS ARE THE "
+        "DRAFTER'S - PRELIMINARY SKELETON",
+        dxfattribs={"layer": "A-ANNO-TEXT", "height": DETAIL_TEXT_HEIGHT * 1.2},
+    ).set_placement((0.0, note_y), align=TextEntityAlignment.MIDDLE_LEFT)
     return doc

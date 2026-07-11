@@ -549,7 +549,7 @@ $SPLINESEGS
   9
 $HANDSEED
   5
-BE
+CA
   9
 $SURFTAB1
  70
@@ -3133,7 +3133,7 @@ ACAD
   0
 APPID
   5
-BB
+C7
 330
 3
 100
@@ -3147,7 +3147,7 @@ HATCHBACKGROUNDCOLOR
   0
 APPID
   5
-BC
+C8
 330
 3
 100
@@ -5611,13 +5611,13 @@ AcDbLine
  10
 0.0
  20
-0.0
+-10.5
  30
 0.0
  11
-0.0
+49.0
  21
--9.0
+-10.5
  31
 0.0
   0
@@ -5633,15 +5633,15 @@ A-ANNO-TABL
 100
 AcDbLine
  10
-10.0
- 20
 0.0
+ 20
+-12.0
  30
 0.0
  11
-10.0
+49.0
  21
--9.0
+-12.0
  31
 0.0
   0
@@ -5657,15 +5657,15 @@ A-ANNO-TABL
 100
 AcDbLine
  10
-16.0
+0.0
  20
 0.0
  30
 0.0
  11
-16.0
+0.0
  21
--9.0
+-12.0
  31
 0.0
   0
@@ -5681,15 +5681,15 @@ A-ANNO-TABL
 100
 AcDbLine
  10
-30.0
+10.0
  20
 0.0
  30
 0.0
  11
-30.0
+10.0
  21
--9.0
+-12.0
  31
 0.0
   0
@@ -5705,6 +5705,54 @@ A-ANNO-TABL
 100
 AcDbLine
  10
+16.0
+ 20
+0.0
+ 30
+0.0
+ 11
+16.0
+ 21
+-12.0
+ 31
+0.0
+  0
+LINE
+  5
+9A
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TABL
+100
+AcDbLine
+ 10
+30.0
+ 20
+0.0
+ 30
+0.0
+ 11
+30.0
+ 21
+-12.0
+ 31
+0.0
+  0
+LINE
+  5
+9B
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TABL
+100
+AcDbLine
+ 10
 44.0
  20
 0.0
@@ -5713,13 +5761,13 @@ AcDbLine
  11
 44.0
  21
--9.0
+-12.0
  31
 0.0
   0
 LINE
   5
-9A
+9C
 330
 17
 100
@@ -5737,13 +5785,13 @@ AcDbLine
  11
 49.0
  21
--9.0
+-12.0
  31
 0.0
   0
 TEXT
   5
-9B
+9D
 330
 17
 100
@@ -5777,7 +5825,7 @@ AcDbText
   0
 TEXT
   5
-9C
+9E
 330
 17
 100
@@ -5811,7 +5859,7 @@ AcDbText
   0
 TEXT
   5
-9D
+9F
 330
 17
 100
@@ -5845,7 +5893,7 @@ AcDbText
   0
 TEXT
   5
-9E
+A0
 330
 17
 100
@@ -5879,7 +5927,7 @@ AcDbText
   0
 TEXT
   5
-9F
+A1
 330
 17
 100
@@ -5913,7 +5961,7 @@ AcDbText
   0
 TEXT
   5
-A0
+A2
 330
 17
 100
@@ -5947,7 +5995,7 @@ AcDbText
   0
 TEXT
   5
-A1
+A3
 330
 17
 100
@@ -5981,7 +6029,7 @@ AcDbText
   0
 TEXT
   5
-A2
+A4
 330
 17
 100
@@ -6015,7 +6063,7 @@ AcDbText
   0
 TEXT
   5
-A3
+A5
 330
 17
 100
@@ -6049,7 +6097,7 @@ AcDbText
   0
 TEXT
   5
-A4
+A6
 330
 17
 100
@@ -6083,7 +6131,7 @@ AcDbText
   0
 TEXT
   5
-A5
+A7
 330
 17
 100
@@ -6117,7 +6165,7 @@ AcDbText
   0
 TEXT
   5
-A6
+A8
 330
 17
 100
@@ -6151,7 +6199,7 @@ AcDbText
   0
 TEXT
   5
-A7
+A9
 330
 17
 100
@@ -6185,7 +6233,7 @@ AcDbText
   0
 TEXT
   5
-A8
+AA
 330
 17
 100
@@ -6219,7 +6267,7 @@ AcDbText
   0
 TEXT
   5
-A9
+AB
 330
 17
 100
@@ -6253,74 +6301,6 @@ AcDbText
   0
 TEXT
   5
-AA
-330
-17
-100
-AcDbEntity
-  8
-A-ANNO-TEXT
-100
-AcDbText
- 10
-5.0
- 20
--5.25
- 30
-0.0
- 40
-0.375
-  1
-SMOKE ALARMS
- 72
-1
- 11
-5.0
- 21
--5.25
- 31
-0.0
-100
-AcDbText
- 73
-2
-  0
-TEXT
-  5
-AB
-330
-17
-100
-AcDbEntity
-  8
-A-ANNO-TEXT
-100
-AcDbText
- 10
-13.0
- 20
--5.25
- 30
-0.0
- 40
-0.375
-  1
-R314
- 72
-1
- 11
-13.0
- 21
--5.25
- 31
-0.0
-100
-AcDbText
- 73
-2
-  0
-TEXT
-  5
 AC
 330
 17
@@ -6331,7 +6311,7 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-23.0
+5.0
  20
 -5.25
  30
@@ -6339,11 +6319,11 @@ AcDbText
  40
 0.375
   1
-EACH SLEEPING ROOM, OUTSIDE, EACH STORY
+LIGHT (GLAZING)
  72
 1
  11
-23.0
+5.0
  21
 -5.25
  31
@@ -6365,7 +6345,7 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-37.0
+13.0
  20
 -5.25
  30
@@ -6373,11 +6353,11 @@ AcDbText
  40
 0.375
   1
-2 SHOWN ON FLOOR PLAN
+R303.1
  72
 1
  11
-37.0
+13.0
  21
 -5.25
  31
@@ -6399,7 +6379,7 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-46.5
+23.0
  20
 -5.25
  30
@@ -6407,11 +6387,11 @@ AcDbText
  40
 0.375
   1
-BY DRAFTER
+8% OF FLOOR AREA PER HABITABLE ROOM
  72
 1
  11
-46.5
+23.0
  21
 -5.25
  31
@@ -6433,21 +6413,21 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-5.0
+37.0
  20
--6.75
+-5.25
  30
 0.0
  40
 0.375
   1
-CO ALARMS
+96 SF TOTAL GLAZING SHOWN
  72
 1
  11
-5.0
+37.0
  21
--6.75
+-5.25
  31
 0.0
 100
@@ -6467,21 +6447,21 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-13.0
+46.5
  20
--6.75
+-5.25
  30
 0.0
  40
 0.375
   1
-R315
+BY DRAFTER
  72
 1
  11
-13.0
+46.5
  21
--6.75
+-5.25
  31
 0.0
 100
@@ -6501,7 +6481,7 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-23.0
+5.0
  20
 -6.75
  30
@@ -6509,11 +6489,11 @@ AcDbText
  40
 0.375
   1
-OUTSIDE SLEEPING AREAS, EACH STORY
+VENTILATION
  72
 1
  11
-23.0
+5.0
  21
 -6.75
  31
@@ -6535,7 +6515,7 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-37.0
+13.0
  20
 -6.75
  30
@@ -6543,11 +6523,11 @@ AcDbText
  40
 0.375
   1
-1 SHOWN ON FLOOR PLAN
+R303.1
  72
 1
  11
-37.0
+13.0
  21
 -6.75
  31
@@ -6569,7 +6549,7 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-46.5
+23.0
  20
 -6.75
  30
@@ -6577,11 +6557,11 @@ AcDbText
  40
 0.375
   1
-BY DRAFTER
+4% OPENABLE PER HABITABLE ROOM
  72
 1
  11
-46.5
+23.0
  21
 -6.75
  31
@@ -6603,21 +6583,21 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-5.0
+37.0
  20
--8.25
+-6.75
  30
 0.0
  40
 0.375
   1
-ATTIC VENTILATION
+OPENABLE AREA PER WINDOW TYPE
  72
 1
  11
-5.0
+37.0
  21
--8.25
+-6.75
  31
 0.0
 100
@@ -6637,21 +6617,21 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-13.0
+46.5
  20
--8.25
+-6.75
  30
 0.0
  40
 0.375
   1
-R806.2
+BY DRAFTER
  72
 1
  11
-13.0
+46.5
  21
--8.25
+-6.75
  31
 0.0
 100
@@ -6671,7 +6651,7 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-23.0
+5.0
  20
 -8.25
  30
@@ -6679,11 +6659,11 @@ AcDbText
  40
 0.375
   1
-1/150 OF ATTIC AREA
+SMOKE ALARMS
  72
 1
  11
-23.0
+5.0
  21
 -8.25
  31
@@ -6705,6 +6685,74 @@ A-ANNO-TEXT
 100
 AcDbText
  10
+13.0
+ 20
+-8.25
+ 30
+0.0
+ 40
+0.375
+  1
+R314
+ 72
+1
+ 11
+13.0
+ 21
+-8.25
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+B8
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+23.0
+ 20
+-8.25
+ 30
+0.0
+ 40
+0.375
+  1
+EACH SLEEPING ROOM, OUTSIDE, EACH STORY
+ 72
+1
+ 11
+23.0
+ 21
+-8.25
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+B9
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
 37.0
  20
 -8.25
@@ -6713,7 +6761,7 @@ AcDbText
  40
 0.375
   1
-5.0 SF NET FREE REQUIRED
+2 SHOWN ON FLOOR PLAN
  72
 1
  11
@@ -6729,7 +6777,7 @@ AcDbText
   0
 TEXT
   5
-B8
+BA
 330
 17
 100
@@ -6763,7 +6811,7 @@ AcDbText
   0
 TEXT
   5
-B9
+BB
 330
 17
 100
@@ -6773,19 +6821,21 @@ A-ANNO-TEXT
 100
 AcDbText
  10
-0.0
+5.0
  20
--10.5
+-9.75
  30
 0.0
  40
 0.375
   1
-* NET CLEAR OPENING DEPENDS ON WINDOW TYPE - VERIFY. THIS TABLE IS
+CO ALARMS
+ 72
+1
  11
-0.0
+5.0
  21
--10.5
+-9.75
  31
 0.0
 100
@@ -6795,7 +6845,313 @@ AcDbText
   0
 TEXT
   5
-BA
+BC
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+13.0
+ 20
+-9.75
+ 30
+0.0
+ 40
+0.375
+  1
+R315
+ 72
+1
+ 11
+13.0
+ 21
+-9.75
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+BD
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+23.0
+ 20
+-9.75
+ 30
+0.0
+ 40
+0.375
+  1
+OUTSIDE SLEEPING AREAS, EACH STORY
+ 72
+1
+ 11
+23.0
+ 21
+-9.75
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+BE
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+37.0
+ 20
+-9.75
+ 30
+0.0
+ 40
+0.375
+  1
+1 SHOWN ON FLOOR PLAN
+ 72
+1
+ 11
+37.0
+ 21
+-9.75
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+BF
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+46.5
+ 20
+-9.75
+ 30
+0.0
+ 40
+0.375
+  1
+BY DRAFTER
+ 72
+1
+ 11
+46.5
+ 21
+-9.75
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+C0
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+5.0
+ 20
+-11.25
+ 30
+0.0
+ 40
+0.375
+  1
+ATTIC VENTILATION
+ 72
+1
+ 11
+5.0
+ 21
+-11.25
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+C1
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+13.0
+ 20
+-11.25
+ 30
+0.0
+ 40
+0.375
+  1
+R806.2
+ 72
+1
+ 11
+13.0
+ 21
+-11.25
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+C2
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+23.0
+ 20
+-11.25
+ 30
+0.0
+ 40
+0.375
+  1
+1/150 OF ATTIC AREA
+ 72
+1
+ 11
+23.0
+ 21
+-11.25
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+C3
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+37.0
+ 20
+-11.25
+ 30
+0.0
+ 40
+0.375
+  1
+5.0 SF NET FREE REQUIRED
+ 72
+1
+ 11
+37.0
+ 21
+-11.25
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+C4
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+46.5
+ 20
+-11.25
+ 30
+0.0
+ 40
+0.375
+  1
+BY DRAFTER
+ 72
+1
+ 11
+46.5
+ 21
+-11.25
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+C5
 330
 17
 100
@@ -6807,7 +7163,39 @@ AcDbText
  10
 0.0
  20
--11.7
+-13.5
+ 30
+0.0
+ 40
+0.375
+  1
+* NET CLEAR OPENING DEPENDS ON WINDOW TYPE - VERIFY. THIS TABLE IS
+ 11
+0.0
+ 21
+-13.5
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+C6
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+0.0
+ 20
+-14.7
  30
 0.0
  40
@@ -6817,7 +7205,7 @@ ARITHMETIC ON STATED VALUES, NOT A CODE COMPLIANCE APPROVAL.
  11
 0.0
  21
--11.7
+-14.7
  31
 0.0
 100
@@ -7915,7 +8303,7 @@ CREATED_BY_EZDXF
   3
 WRITTEN_BY_EZDXF
 350
-BD
+C9
   0
 DICTIONARYVAR
   5
@@ -8631,7 +9019,7 @@ X-Ray
   0
 DICTIONARYVAR
   5
-BD
+C9
 330
 2D
 100

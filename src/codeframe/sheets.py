@@ -23,6 +23,7 @@ from matplotlib.patches import Rectangle
 
 from .dxf import (
     build_code_compliance,
+    build_details,
     build_elevation,
     build_floor_plan,
     build_foundation_plan,
@@ -33,6 +34,7 @@ from .dxf import (
     build_section,
     build_site_plan,
     build_structural_notes,
+    section_sheet_number,
 )
 from .schema import ProjectConfig
 
@@ -52,6 +54,11 @@ ENGINEERING_SCALES = [
     ("1\" = 10'", 10.0),
     ("1\" = 20'", 20.0),
     ("1\" = 30'", 30.0),
+]
+# Details are laid out to always fit one sheet at the fixed detail scale
+# (each detail writes that scale under its own title).
+DETAIL_SCALES = [
+    ("1\" = 1'-0\"", 1.0),
 ]
 
 STAMP = "PRELIMINARY — NOT FOR CONSTRUCTION"
@@ -154,11 +161,7 @@ def _decorate_sheet(
 def write_sheet_set(project: ProjectConfig, path: Path) -> None:
     """Write the multi-page PDF drawing set (site, floor, elevations, roof)."""
 
-    site = build_site_plan(project)
-    floor = build_floor_plan(project)
-    roof = build_roof_plan(project)
     walls = ("front", "rear", "left", "right")
-    elevations = [build_elevation(project, wall) for wall in walls]
 
     content = (
         MARGIN,
@@ -168,16 +171,32 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
     )
     _, _, content_w, content_h = content
 
-    def single_doc_page(pdf: PdfPages, doc: Drawing, title: str, number: str, scales) -> None:
-        extent = _extents(doc)
-        scale_label, feet_per_inch = _pick_scale(
-            scales, extent.size.x, extent.size.y, content_w, content_h
-        )
+    def compose_page(
+        pdf: PdfPages, doc: Drawing, title: str, number: str,
+        scale_label: str, feet_per_inch: float,
+    ) -> None:
         fig = Figure(figsize=(SHEET_WIDTH, SHEET_HEIGHT))
         fig.patch.set_facecolor("white")
         _place_drawing(fig, doc, content, feet_per_inch)
         _decorate_sheet(fig, project, title, number, scale_label)
         pdf.savefig(fig)
+
+    def single_doc_page(pdf: PdfPages, doc: Drawing, title: str, number: str, scales) -> None:
+        extent = _extents(doc)
+        scale_label, feet_per_inch = _pick_scale(
+            scales, extent.size.x, extent.size.y, content_w, content_h
+        )
+        compose_page(pdf, doc, title, number, scale_label, feet_per_inch)
+
+    def scaled_view_page(pdf: PdfPages, make_doc, title: str, number: str, scales) -> None:
+        """Two passes: probe extents to pick the scale, then rebuild the
+        view with the chosen scale written under its on-plan title."""
+
+        extent = _extents(make_doc(None))
+        scale_label, feet_per_inch = _pick_scale(
+            scales, extent.size.x, extent.size.y, content_w, content_h
+        )
+        compose_page(pdf, make_doc(scale_label), title, number, scale_label, feet_per_inch)
 
     metadata = {
         "CreationDate": None,
@@ -195,19 +214,28 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
                 pdf, build_code_compliance(project), "CODE COMPLIANCE", "A0.2",
                 ARCHITECTURAL_SCALES,
             )
-            single_doc_page(pdf, site, "SITE PLAN", "A1.0", ENGINEERING_SCALES)
-            single_doc_page(pdf, floor, "FLOOR PLAN", "A2.0", ARCHITECTURAL_SCALES)
+            scaled_view_page(
+                pdf, lambda scale: build_site_plan(project, scale),
+                "SITE PLAN", "A1.0", ENGINEERING_SCALES,
+            )
+            scaled_view_page(
+                pdf, lambda scale: build_floor_plan(project, scale),
+                "FLOOR PLAN", "A2.0", ARCHITECTURAL_SCALES,
+            )
 
             # Elevations: 2x2 grid sharing one scale, standard practice.
             cell_w = (content_w - CELL_GAP) / 2
             cell_h = (content_h - CELL_GAP) / 2
-            extents = [_extents(doc) for doc in elevations]
+            extents = [_extents(build_elevation(project, wall)) for wall in walls]
             scale_label, feet_per_inch = _pick_scale(
                 ARCHITECTURAL_SCALES,
                 max(extent.size.x for extent in extents),
                 max(extent.size.y for extent in extents),
                 cell_w, cell_h,
             )
+            elevations = [
+                build_elevation(project, wall, scale_label) for wall in walls
+            ]
             fig = Figure(figsize=(SHEET_WIDTH, SHEET_HEIGHT))
             fig.patch.set_facecolor("white")
             x0, y0 = content[0], content[1]
@@ -222,16 +250,19 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
             _decorate_sheet(fig, project, "ELEVATIONS", "A3.0", scale_label)
             pdf.savefig(fig)
 
-            single_doc_page(pdf, roof, "ROOF PLAN", "A4.0", ARCHITECTURAL_SCALES)
+            scaled_view_page(
+                pdf, lambda scale: build_roof_plan(project, scale),
+                "ROOF PLAN", "A4.0", ARCHITECTURAL_SCALES,
+            )
             single_doc_page(
                 pdf, build_schedules(project), "SCHEDULES", "A5.0", ARCHITECTURAL_SCALES
             )
             for index, section in enumerate(project.sections):
-                single_doc_page(
+                scaled_view_page(
                     pdf,
-                    build_section(project, section),
+                    lambda scale, section=section: build_section(project, section, scale),
                     f"SECTION {section.name}-{section.name}",
-                    f"A6.{index}",
+                    section_sheet_number(index),
                     ARCHITECTURAL_SCALES,
                 )
             if (
@@ -243,12 +274,20 @@ def write_sheet_set(project: ProjectConfig, path: Path) -> None:
                     "S0.0", ARCHITECTURAL_SCALES,
                 )
             if project.building.foundation is not None:
-                single_doc_page(
-                    pdf, build_foundation_plan(project), "FOUNDATION PLAN",
-                    "S1.0", ARCHITECTURAL_SCALES,
+                scaled_view_page(
+                    pdf, lambda scale: build_foundation_plan(project, scale),
+                    "FOUNDATION PLAN", "S1.0", ARCHITECTURAL_SCALES,
                 )
             if project.building.roof.framing is not None:
+                scaled_view_page(
+                    pdf, lambda scale: build_roof_framing_plan(project, scale),
+                    "ROOF FRAMING PLAN", "S2.0", ARCHITECTURAL_SCALES,
+                )
+            if (
+                project.building.foundation is not None
+                or project.building.roof.framing is not None
+            ):
                 single_doc_page(
-                    pdf, build_roof_framing_plan(project), "ROOF FRAMING PLAN",
-                    "S2.0", ARCHITECTURAL_SCALES,
+                    pdf, build_details(project), "TYPICAL DETAILS", "S3.0",
+                    DETAIL_SCALES,
                 )

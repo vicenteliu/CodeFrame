@@ -134,6 +134,17 @@ and the core rejects geometry that can never satisfy CRC R310 (sill over
 5.7 sq ft). Net clear opening depends on the window type — the Drafter
 still verifies it.
 
+## Typical details (sheet S3)
+
+No config fields of its own: when `building.foundation` or `roof.framing`
+is present, `generate` adds a typical-details sheet (`details.dxf`, PDF
+sheet S3.0) drawn from the values already stated. Foundation enables the
+slab-edge footing detail (plus an interior bearing footing detail when any
+interior wall is `"bearing": true`); framing enables the eave connection
+detail and — for rafters only — the ridge detail (truss connections belong
+to the deferred truss package); a typical header detail is always included.
+Connector models and member sizes stay the Drafter's (BY DRAFTER callouts).
+
 ## Foundation (sheet S1)
 
 `building.foundation` is optional; when present, `generate` adds a
@@ -168,6 +179,15 @@ building-local points: `{"type": "smoke" | "co" | "combo", "at": {x, y}}`.
 Placement is the Drafter's decision (CRC R314/R315: sleeping rooms,
 outside sleeping areas, each story) — CodeFrame draws the symbol (circle
 with S / CO / S/CO) exactly where the config puts it, nothing more.
+
+## Callouts
+
+`callouts` is a top-level list of leadered labels on the floor plan:
+`{"text": ..., "at": {x, y}, "target": {x, y}}`. `at` is the leader tail —
+the text sits just beyond it, on the side away from the target — and the
+arrowhead lands on `target`. Use one when a feature is too small or too
+crowded for a centered label (washer/dryer alcove, kitchen run). Both
+points are building-local and must differ; text renders uppercase.
 
 ## Room areas
 

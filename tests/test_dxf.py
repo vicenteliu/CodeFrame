@@ -10,6 +10,7 @@ from codeframe.dxf import (
     UnsupportedRoofError,
     format_feet_inches,
     write_code_compliance,
+    write_details,
     write_elevation,
     write_floor_plan,
     write_foundation_plan,
@@ -44,6 +45,7 @@ PLAN_WRITERS = [
     ("roof_framing_plan", write_roof_framing_plan),
     ("structural_notes", write_structural_notes),
     ("code_compliance", write_code_compliance),
+    ("details", write_details),
 ]
 
 # Demo roof: gable 4:12 over a 20 ft span, 1 ft overhang, 9 ft walls.
@@ -119,6 +121,10 @@ def test_general_notes_carry_code_refs_and_project_data(demo_project, tmp_path):
     assert "BUILDING FOOTPRINT: 20 x 24 FT (480 SF)" in joined
     assert "LOT COVERAGE: 8.0%" in joined
     assert "ROOF: GABLE 4:12, 1 FT OVERHANG" in joined
+    # Area summary table: stated room areas plus their total.
+    assert "AREA SUMMARY" in lines
+    total = lines.index("TOTAL")
+    assert lines[total:total + 2] == ["TOTAL", "430"]
 
 
 def test_site_plan_is_deterministic(demo_project, tmp_path):
@@ -196,14 +202,41 @@ def test_floor_plan_door_swing_window_and_interior_wall(demo_project, tmp_path):
     # In-left interior door: leaf hinged at (3, 18.1875) opening toward +y.
     assert segment(3, 18.1875, 3, 20.6875) in door_lines
 
+    # Room names render uppercase (drafting convention); stated areas render
+    # under the labels; the designated egress window is called out inside
+    # the wall face.
     labels = {text.dxf.text for text in msp.query("TEXT")}
-    assert {"Studio", "Storage"} <= labels
-    # Stated room areas render under the labels; the designated egress
-    # window is called out inside the wall face.
+    assert {"STUDIO", "STORAGE"} <= labels
     assert {"329 SF", "101 SF", "EGRESS"} <= labels
 
-    # 2 overall + front chain (3) + left chain (3) + interior wall locate (1).
+    # 2 overall (rear/right have no openings) + front chain (3) + left
+    # chain (3) + interior wall locate (1).
     assert len(msp.query("DIMENSION")) == 9
+
+
+def test_floor_plan_poches_cut_walls(demo_project, tmp_path):
+    out_path = tmp_path / "floor_plan.dxf"
+    write_floor_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    # Exterior: front splits at the door (2) + rear (1) + left splits at the
+    # window (2) + right (1); interior wall splits at its door (2).
+    assert len(msp.query("HATCH[layer=='A-WALL']")) == 6
+    assert len(msp.query("HATCH[layer=='A-WALL-INTR']")) == 2
+    for hatch in msp.query("HATCH"):
+        assert hatch.dxf.solid_fill == 1
+
+
+def test_floor_plan_has_title_and_north_arrow(demo_project, tmp_path):
+    out_path = tmp_path / "floor_plan.dxf"
+    write_floor_plan(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = {text.dxf.text for text in msp.query("TEXT")}
+    # Standalone DXF has no paper scale, so the title carries no scale line.
+    assert "FLOOR PLAN" in labels
+    assert "N" in labels
+    assert not any(text.dxf.text.startswith("SCALE:") for text in msp.query("TEXT"))
 
 
 def test_floor_plan_is_deterministic(demo_project, tmp_path):
@@ -241,6 +274,8 @@ def test_front_elevation_shows_gable_end(demo_project, tmp_path):
 
     labels = {text.dxf.text for text in msp.query("TEXT")}
     assert "FRONT ELEVATION" in labels
+    # Roof pitch symbol on the gable end: run labeled 12, rise labeled 4.
+    assert {"12", "4"} <= labels
     # Plate height and ridge height.
     assert len(msp.query("DIMENSION")) == 2
 
@@ -312,10 +347,11 @@ def test_schedules_group_openings_with_marks(demo_project, tmp_path):
     assert labels[d1:d1 + 5] == ["D1", "3'-0\"", "6'-8\"", "EXTERIOR", "1"]
     d2 = labels.index("D2")
     assert labels[d2:d2 + 5] == ["D2", "2'-6\"", "6'-8\"", "INTERIOR", "1"]
-    # W1 = the 4'-0" x 3'-0" egress window on a 3'-0" sill.
+    # W1 = the 4'-0" x 3'-0" egress window on a 3'-0" sill; the schedule
+    # carries its glazed area for R303 light/vent checks.
     w1 = labels.index("W1")
-    assert labels[w1:w1 + 6] == [
-        "W1", "4'-0\"", "3'-0\"", "SILL 3'-0\"", "1", "EGRESS",
+    assert labels[w1:w1 + 7] == [
+        "W1", "4'-0\"", "3'-0\"", "SILL 3'-0\"", "12 SF", "1", "EGRESS",
     ]
 
 
@@ -326,8 +362,9 @@ def test_floor_plan_tags_openings_with_schedule_marks(demo_project, tmp_path):
     msp = ezdxf.readfile(out_path).modelspace()
     labels = {text.dxf.text for text in msp.query("TEXT")}
     assert {"D1", "D2", "W1"} <= labels
-    # One tag circle per opening: front door, interior door, window.
-    assert len(msp.query("CIRCLE[layer=='A-ANNO-TEXT']")) == 3
+    # One tag circle per opening (front door, interior door, window) plus
+    # the north arrow circle.
+    assert len(msp.query("CIRCLE[layer=='A-ANNO-TEXT']")) == 4
 
 
 def test_floor_plan_draws_detector_symbols(demo_project, tmp_path):
@@ -401,9 +438,34 @@ def test_section_shows_cut_walls_and_roof_profile(demo_project, tmp_path):
     assert segment(10, RIDGE_Z, 21, EAVE_Z) in roof
     assert segment(0, 9, 20, 9) in roof
 
+    # Cut walls read as poché.
+    assert len(msp.query("HATCH[layer=='A-WALL']")) == 2
+
     labels = {text.dxf.text for text in msp.query("TEXT")}
     assert "SECTION A-A" in labels
     assert len(msp.query("DIMENSION")) == 2
+
+
+def test_floor_plan_draws_callout_leaders(tmp_path):
+    import json
+
+    data = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
+    data["callouts"] = [
+        {"text": "Washer/Dryer", "at": {"x": 6, "y": 12}, "target": {"x": 10, "y": 12}},
+    ]
+    config_path = tmp_path / "callouts.json"
+    config_path.write_text(json.dumps(data), encoding="utf-8")
+    project = load_project_config(config_path)
+
+    out_path = tmp_path / "floor_plan.dxf"
+    write_floor_plan(project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = {text.dxf.text for text in msp.query("TEXT")}
+    assert "WASHER/DRYER" in labels
+    # Leader shaft from tail to target plus two arrowhead wings.
+    lines = line_segments(msp, "A-ANNO-TEXT")
+    assert segment(6, 12, 10, 12) in lines
 
 
 def test_floor_plan_marks_section_cut_line(demo_project, tmp_path):
@@ -414,8 +476,11 @@ def test_floor_plan_marks_section_cut_line(demo_project, tmp_path):
     assert segment(-5, 10, 25, 10) in line_segments(msp, "A-ANNO-SECT")
     bubbles = msp.query("CIRCLE[layer=='A-ANNO-SECT']")
     assert len(bubbles) == 2
+    # Split bubbles: view letter over the destination sheet number, plus a
+    # filled triangle per bubble pointing the view direction.
     names = [text.dxf.text for text in msp.query("TEXT[layer=='A-ANNO-SECT']")]
-    assert names == ["A", "A"]
+    assert names == ["A", "A6.0", "A", "A6.0"]
+    assert len(msp.query("SOLID[layer=='A-ANNO-SECT']")) == 2
 
 
 def test_foundation_plan_footings_hold_downs_and_notes(demo_project, tmp_path):
@@ -552,9 +617,66 @@ def test_code_compliance_table_computes_stated_values(demo_project, tmp_path):
     egress = labels.index("EGRESS (LEFT WALL)")
     assert labels[egress + 3] == "12.0 SF GROSS, 4'-0\" x 3'-0\", SILL 3'-0\""
     assert labels[egress + 4] == "OK*"
+    # R303 light/vent rows: total glazing is computed, verdicts stay BY
+    # DRAFTER (per-room split is not derivable from the config).
+    light = labels.index("LIGHT (GLAZING)")
+    assert labels[light + 3] == "12 SF TOTAL GLAZING SHOWN"
+    assert labels[light + 4] == "BY DRAFTER"
+    assert "VENTILATION" in labels
     joined = "\n".join(labels)
     assert "3.2 SF NET FREE REQUIRED" in joined
     assert "NOT A CODE COMPLIANCE APPROVAL" in joined
+
+
+def test_details_draw_footing_connection_and_header(demo_project, tmp_path):
+    out_path = tmp_path / "details.dxf"
+    write_details(demo_project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = [text.dxf.text for text in msp.query("TEXT")]
+
+    # Demo (foundation + rafters, no bearing walls): footing, eave, ridge,
+    # header — numbered detail bubbles in that order.
+    assert [t for t in labels if t in "1234"] == ["1", "2", "3", "4"]
+    assert "EXTERIOR FOOTING AT SLAB EDGE" in labels
+    assert "EAVE CONNECTION AT TOP PLATE" in labels
+    assert "RIDGE CONNECTION" in labels
+    assert "TYPICAL HEADER AT OPENING" in labels
+    assert labels.count(f"SCALE: 1\" = 1'-0\"") == 4
+
+    # Config values feed the callouts; sizing stays BY DRAFTER.
+    joined = "\n".join(labels)
+    assert "1'-0\" W x 1'-0\" D FOOTING" in joined
+    assert "3.5\" SLAB OVER 10-MIL VAPOR RETARDER OVER 4\" BASE" in joined
+    assert labels.count("2x8 DF #2 RAFTERS @ 24\" O.C.") == 2  # eave + ridge
+    assert "2x10 RIDGE BOARD" in labels
+    assert "UPLIFT CONNECTOR (R802.11) - BY DRAFTER" in labels
+    assert "HEADER PER CRC TABLE R602.7 - SIZE BY DRAFTER" in labels
+
+    # Earth poché at the exterior footing: deterministic 45-degree lines.
+    assert len(msp.query("LINE[layer=='S-DETL-PATT']")) >= 8
+
+
+def test_details_truss_variant_skips_ridge_and_adds_bearing_footing(tmp_path):
+    import json
+
+    data = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
+    data["building"]["roof"]["framing"] = {
+        "member": "truss", "size": "PRE-ENG", "spacing": 2,
+    }
+    data["interior_walls"][0]["bearing"] = True
+    config_path = tmp_path / "truss.json"
+    config_path.write_text(json.dumps(data), encoding="utf-8")
+    project = load_project_config(config_path)
+
+    out_path = tmp_path / "details.dxf"
+    write_details(project, out_path)
+
+    msp = ezdxf.readfile(out_path).modelspace()
+    labels = [text.dxf.text for text in msp.query("TEXT")]
+    assert "INTERIOR BEARING FOOTING" in labels
+    assert "RIDGE CONNECTION" not in labels  # truss package is deferred
+    assert "PRE-ENG TRUSSES @ 24\" O.C." in labels
 
 
 def test_unsupported_roof_type_raises_clear_error(tmp_path):

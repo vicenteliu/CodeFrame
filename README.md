@@ -1,6 +1,6 @@
 # CodeFrame
 
-**An 11-sheet California ADU permit-drawing skeleton — from one JSON file
+**A 12-sheet California ADU permit-drawing skeleton — from one JSON file
 (or one guided conversation) to editable DXF, a title-blocked PDF set, and
 a 3D model, in seconds.**
 
@@ -33,6 +33,7 @@ skeleton the LA / San Diego County pre-approved sets use:
 | S0.0 Structural Notes | Design basis, conventional-construction path (CRC R301.1.3) |
 | S1.0 Foundation Plan | Slab-on-grade footings, hold-downs, anchor-bolt and vapor-retarder notes |
 | S2.0 Roof Framing Plan | Rafter/truss layout with span arrow and callouts; deferred-submittal note for trusses |
+| S3.0 Typical Details | Slab-edge footing, bearing footing, eave and ridge connections, header at openings — drawn from your stated values, sizes BY DRAFTER |
 
 Every DXF is editable model-space geometry on conventional layers; the PDF
 is Arch D sheets with title blocks at true architectural scales; a STEP 3D

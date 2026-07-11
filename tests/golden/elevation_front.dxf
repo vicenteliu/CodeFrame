@@ -549,7 +549,7 @@ $SPLINESEGS
   9
 $HANDSEED
   5
-B8
+BE
   9
 $SURFTAB1
  70
@@ -3229,7 +3229,7 @@ ACAD
   0
 APPID
   5
-B5
+BB
 330
 3
 100
@@ -3243,7 +3243,7 @@ HATCHBACKGROUNDCOLOR
   0
 APPID
   5
-B6
+BC
 330
 3
 100
@@ -5187,7 +5187,7 @@ _CLOSEDBLANK
   0
 BLOCK_RECORD
   5
-98
+9E
 330
 9
 100
@@ -5207,7 +5207,7 @@ AcDbBlockTableRecord
   0
 BLOCK_RECORD
   5
-A7
+AD
 330
 9
 100
@@ -5527,9 +5527,9 @@ AcDbBlockEnd
   0
 BLOCK
   5
-99
+9F
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5553,9 +5553,9 @@ AcDbBlockBegin
   0
 LINE
   5
-9B
+A1
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5577,9 +5577,9 @@ AcDbLine
   0
 LINE
   5
-9C
+A2
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5601,9 +5601,9 @@ AcDbLine
   0
 INSERT
   5
-9D
+A3
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5627,9 +5627,9 @@ _ARCHTICK
   0
 INSERT
   5
-9F
+A5
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5653,9 +5653,9 @@ _ARCHTICK
   0
 LINE
   5
-A1
+A7
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5677,9 +5677,9 @@ AcDbLine
   0
 MTEXT
   5
-A2
+A8
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5697,7 +5697,7 @@ AcDbMText
  71
 5
   1
-9'
+9'-0"
   7
 OpenSansCondensed-Light
  50
@@ -5705,9 +5705,9 @@ OpenSansCondensed-Light
   0
 POINT
   5
-A3
+A9
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5723,9 +5723,9 @@ AcDbPoint
   0
 POINT
   5
-A4
+AA
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5741,9 +5741,9 @@ AcDbPoint
   0
 POINT
   5
-A5
+AB
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5759,9 +5759,9 @@ AcDbPoint
   0
 ENDBLK
   5
-9A
+A0
 330
-98
+9E
 100
 AcDbEntity
   8
@@ -5771,9 +5771,9 @@ AcDbBlockEnd
   0
 BLOCK
   5
-A8
+AE
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5797,9 +5797,9 @@ AcDbBlockBegin
   0
 LINE
   5
-AA
+B0
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5821,9 +5821,9 @@ AcDbLine
   0
 LINE
   5
-AB
+B1
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5845,9 +5845,9 @@ AcDbLine
   0
 INSERT
   5
-AC
+B2
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5871,9 +5871,9 @@ _ARCHTICK
   0
 INSERT
   5
-AE
+B4
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5897,9 +5897,9 @@ _ARCHTICK
   0
 LINE
   5
-B0
+B6
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5921,9 +5921,9 @@ AcDbLine
   0
 MTEXT
   5
-B1
+B7
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5941,7 +5941,7 @@ AcDbMText
  71
 5
   1
-12,3'
+12'-4"
   7
 OpenSansCondensed-Light
  50
@@ -5949,9 +5949,9 @@ OpenSansCondensed-Light
   0
 POINT
   5
-B2
+B8
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5967,9 +5967,9 @@ AcDbPoint
   0
 POINT
   5
-B3
+B9
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -5985,9 +5985,9 @@ AcDbPoint
   0
 POINT
   5
-B4
+BA
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -6003,9 +6003,9 @@ AcDbPoint
   0
 ENDBLK
   5
-A9
+AF
 330
-A7
+AD
 100
 AcDbEntity
   8
@@ -6103,9 +6103,149 @@ AcDbLine
  31
 0.0
   0
-LWPOLYLINE
+LINE
   5
 94
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbLine
+ 10
+3.5
+ 20
+11.166666666666666
+ 30
+0.0
+ 11
+5.5
+ 21
+11.166666666666666
+ 31
+0.0
+  0
+LINE
+  5
+95
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbLine
+ 10
+5.5
+ 20
+11.166666666666666
+ 30
+0.0
+ 11
+5.5
+ 21
+11.833333333333332
+ 31
+0.0
+  0
+LINE
+  5
+96
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbLine
+ 10
+5.5
+ 20
+11.833333333333332
+ 30
+0.0
+ 11
+3.5
+ 21
+11.166666666666666
+ 31
+0.0
+  0
+TEXT
+  5
+97
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+4.5
+ 20
+10.616666666666665
+ 30
+0.0
+ 40
+0.375
+  1
+12
+ 72
+1
+ 11
+4.5
+ 21
+10.616666666666665
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+TEXT
+  5
+98
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+6.05
+ 20
+11.5
+ 30
+0.0
+ 40
+0.375
+  1
+4
+ 72
+1
+ 11
+6.05
+ 21
+11.5
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+LWPOLYLINE
+  5
+99
 330
 17
 100
@@ -6137,7 +6277,7 @@ AcDbPolyline
   0
 LINE
   5
-95
+9A
 330
 17
 100
@@ -6161,7 +6301,7 @@ AcDbLine
   0
 TEXT
   5
-96
+9B
 330
 17
 100
@@ -6177,7 +6317,7 @@ AcDbText
  30
 0.0
  40
-0.375
+0.75
   1
 FRONT ELEVATION
  72
@@ -6193,9 +6333,33 @@ AcDbText
  73
 2
   0
+LINE
+  5
+9C
+330
+17
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbLine
+ 10
+5.5
+ 20
+-3.025
+ 30
+0.0
+ 11
+14.5
+ 21
+-3.025
+ 31
+0.0
+  0
 DIMENSION
   5
-97
+9D
 330
 17
 100
@@ -6227,7 +6391,7 @@ CODEFRAME
  71
 5
   1
-<>
+9'-0"
 100
 AcDbAlignedDimension
  13
@@ -6249,7 +6413,7 @@ AcDbRotatedDimension
   0
 DIMENSION
   5
-A6
+AC
 330
 17
 100
@@ -6281,7 +6445,7 @@ CODEFRAME
  71
 5
   1
-<>
+12'-4"
 100
 AcDbAlignedDimension
  13
@@ -7391,7 +7555,7 @@ CREATED_BY_EZDXF
   3
 WRITTEN_BY_EZDXF
 350
-B7
+BD
   0
 DICTIONARYVAR
   5
@@ -8107,7 +8271,7 @@ X-Ray
   0
 DICTIONARYVAR
   5
-B7
+BD
 330
 2D
 100
