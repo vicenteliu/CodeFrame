@@ -1,0 +1,574 @@
+{
+  "schema_version": 1,
+  "name": "Single-Family Residence 1800",
+  "location": "California, USA",
+  "output_target": "outputs/single-family-1800",
+  "units": "feet",
+  "site": {
+    "lot": {
+      "width": 50,
+      "depth": 100
+    },
+    "setbacks": {
+      "front": 20,
+      "rear": 15,
+      "left": 5,
+      "right": 5
+    },
+    "existing_structures": [],
+    "north_rotation": 15
+  },
+  "building": {
+    "position": {
+      "x": 5,
+      "y": 24.5
+    },
+    "footprint": {
+      "width": 40,
+      "depth": 51
+    },
+    "wall_height": 9,
+    "exterior_wall_thickness": 0.5,
+    "roof": {
+      "type": "gable",
+      "slope": "4:12",
+      "ridge_axis": "y",
+      "overhang": 1,
+      "framing": {
+        "member": "truss",
+        "size": "PRE-ENG",
+        "spacing": 2
+      }
+    },
+    "foundation": {
+      "type": "slab-on-grade",
+      "footing_width": 1.25,
+      "footing_depth": 1.5,
+      "hold_downs": [
+        {
+          "at": {
+            "x": 0.75,
+            "y": 0.75
+          },
+          "label": "HD1"
+        },
+        {
+          "at": {
+            "x": 39.25,
+            "y": 0.75
+          },
+          "label": "HD1"
+        },
+        {
+          "at": {
+            "x": 0.75,
+            "y": 50.25
+          },
+          "label": "HD1"
+        },
+        {
+          "at": {
+            "x": 39.25,
+            "y": 50.25
+          },
+          "label": "HD1"
+        },
+        {
+          "at": {
+            "x": 12.4,
+            "y": 0.75
+          },
+          "label": "HD2"
+        },
+        {
+          "at": {
+            "x": 12.4,
+            "y": 19.6
+          },
+          "label": "HD2"
+        }
+      ]
+    }
+  },
+  "interior_walls": [
+    {
+      "axis": "y",
+      "offset": 12,
+      "from": 0,
+      "to": 20,
+      "thickness": 0.375,
+      "doors": [
+        {
+          "at": 16,
+          "width": 2.67,
+          "height": 6.67,
+          "swing": "in-left"
+        }
+      ]
+    },
+    {
+      "axis": "x",
+      "offset": 20,
+      "from": 0,
+      "to": 12,
+      "thickness": 0.375
+    },
+    {
+      "axis": "x",
+      "offset": 20,
+      "from": 24,
+      "to": 40,
+      "thickness": 0.375
+    },
+    {
+      "axis": "y",
+      "offset": 16,
+      "from": 25,
+      "to": 37,
+      "thickness": 0.375
+    },
+    {
+      "axis": "y",
+      "offset": 24,
+      "from": 20,
+      "to": 37,
+      "thickness": 0.375,
+      "doors": [
+        {
+          "at": 26,
+          "width": 2.67,
+          "height": 6.67,
+          "swing": "in-left"
+        },
+        {
+          "at": 33.5,
+          "width": 2.5,
+          "height": 6.67,
+          "swing": "in-left"
+        }
+      ],
+      "bearing": true
+    },
+    {
+      "axis": "x",
+      "offset": 32,
+      "from": 24,
+      "to": 40,
+      "thickness": 0.375,
+      "doors": [
+        {
+          "at": 34.25,
+          "width": 2.5,
+          "height": 6.67,
+          "swing": "out-left"
+        }
+      ]
+    },
+    {
+      "axis": "y",
+      "offset": 32,
+      "from": 32,
+      "to": 37,
+      "thickness": 0.375
+    },
+    {
+      "axis": "x",
+      "offset": 37,
+      "from": 0,
+      "to": 40,
+      "thickness": 0.375,
+      "doors": [
+        {
+          "at": 16.7,
+          "width": 2.67,
+          "height": 6.67,
+          "swing": "in-left"
+        },
+        {
+          "at": 20.7,
+          "width": 2.67,
+          "height": 6.67,
+          "swing": "in-right"
+        }
+      ]
+    },
+    {
+      "axis": "y",
+      "offset": 7,
+      "from": 44,
+      "to": 51,
+      "thickness": 0.375,
+      "doors": [
+        {
+          "at": 46.5,
+          "width": 2.5,
+          "height": 6.67,
+          "swing": "in-left"
+        }
+      ]
+    },
+    {
+      "axis": "x",
+      "offset": 44,
+      "from": 0,
+      "to": 7,
+      "thickness": 0.375
+    }
+  ],
+  "openings": [
+    {
+      "type": "door",
+      "wall": "front",
+      "offset": 1.5,
+      "width": 9,
+      "height": 7,
+      "swing": "in-left"
+    },
+    {
+      "type": "door",
+      "wall": "front",
+      "offset": 20,
+      "width": 3,
+      "height": 6.67,
+      "swing": "in-left"
+    },
+    {
+      "type": "window",
+      "wall": "front",
+      "offset": 26,
+      "width": 6,
+      "height": 4,
+      "sill": 2.5
+    },
+    {
+      "type": "window",
+      "wall": "rear",
+      "offset": 2.5,
+      "width": 2,
+      "height": 2,
+      "sill": 5
+    },
+    {
+      "type": "window",
+      "wall": "rear",
+      "offset": 10,
+      "width": 6,
+      "height": 4,
+      "sill": 2.5,
+      "egress": true
+    },
+    {
+      "type": "window",
+      "wall": "rear",
+      "offset": 28,
+      "width": 6,
+      "height": 4,
+      "sill": 2.5,
+      "egress": true
+    },
+    {
+      "type": "window",
+      "wall": "left",
+      "offset": 26,
+      "width": 4,
+      "height": 3,
+      "sill": 3.5
+    },
+    {
+      "type": "window",
+      "wall": "left",
+      "offset": 39,
+      "width": 4,
+      "height": 4,
+      "sill": 2.5
+    },
+    {
+      "type": "window",
+      "wall": "right",
+      "offset": 5,
+      "width": 6,
+      "height": 4,
+      "sill": 2.5
+    },
+    {
+      "type": "window",
+      "wall": "right",
+      "offset": 23,
+      "width": 5,
+      "height": 4,
+      "sill": 2.5,
+      "egress": true
+    },
+    {
+      "type": "window",
+      "wall": "right",
+      "offset": 33,
+      "width": 2,
+      "height": 2,
+      "sill": 5
+    },
+    {
+      "type": "window",
+      "wall": "right",
+      "offset": 42,
+      "width": 5,
+      "height": 4,
+      "sill": 2.5
+    }
+  ],
+  "rooms": [
+    {
+      "name": "Garage",
+      "label_at": {
+        "x": 6,
+        "y": 10
+      },
+      "area": 240
+    },
+    {
+      "name": "Living Room",
+      "label_at": {
+        "x": 26,
+        "y": 10
+      },
+      "area": 560
+    },
+    {
+      "name": "Kitchen",
+      "label_at": {
+        "x": 8,
+        "y": 28.5
+      },
+      "area": 272
+    },
+    {
+      "name": "Hall",
+      "label_at": {
+        "x": 20,
+        "y": 30
+      },
+      "area": 136
+    },
+    {
+      "name": "Bedroom 3",
+      "label_at": {
+        "x": 32,
+        "y": 26
+      },
+      "area": 192
+    },
+    {
+      "name": "Bath 3",
+      "label_at": {
+        "x": 28,
+        "y": 34.5
+      },
+      "area": 40
+    },
+    {
+      "name": "Bath 2",
+      "label_at": {
+        "x": 36,
+        "y": 34.5
+      },
+      "area": 40
+    },
+    {
+      "name": "Master Bedroom",
+      "label_at": {
+        "x": 13,
+        "y": 45
+      },
+      "area": 231
+    },
+    {
+      "name": "Master Bath",
+      "label_at": {
+        "x": 3.5,
+        "y": 47.5
+      },
+      "area": 49
+    },
+    {
+      "name": "Bedroom 2",
+      "label_at": {
+        "x": 30,
+        "y": 44
+      },
+      "area": 280
+    }
+  ],
+  "notes": [
+    "Program: 3 bed / 3 bath, kitchen, living room, 1-car garage; 1800 sq ft living area (gross footprint 40x51 = 2040 minus 12x20 garage = 1800).",
+    "Living area interpreted as 1800 sq ft (brief said sq in, assumed a typo).",
+    "Lot 5000 sq ft assumed as 50x100; building centered (5 ft each side, 24.5 ft front and rear).",
+    "The 9 ft front opening in the garage bay is a garage door drawn with a placeholder swing; drafter to replace with a garage-door symbol.",
+    "Interior doors are drawn with leaf and swing arc: garage-living, bedroom 3, bath 3 (common, off the hall), bath 2 (bedroom 3 ensuite), master bedroom, bedroom 2, and master bath. Drafter refines widths/hardware in CAD.",
+    "No code compliance implied; setbacks and all dimensions are for the drafter to verify.",
+    "Egress windows designated for all three bedrooms; net clear opening per window type is the drafter's verification.",
+    "Smoke alarms in each bedroom, combo smoke/CO in the hall and living room (near garage); final locations per CRC R314/R315 are the drafter's verification.",
+    "Roof: pre-engineered trusses at 24 in o.c.; stamped truss package is a deferred submittal."
+  ],
+  "detectors": [
+    {
+      "type": "smoke",
+      "at": {
+        "x": 13,
+        "y": 41.5
+      }
+    },
+    {
+      "type": "smoke",
+      "at": {
+        "x": 30,
+        "y": 41.5
+      }
+    },
+    {
+      "type": "smoke",
+      "at": {
+        "x": 32,
+        "y": 23
+      }
+    },
+    {
+      "type": "combo",
+      "at": {
+        "x": 20,
+        "y": 27
+      }
+    },
+    {
+      "type": "combo",
+      "at": {
+        "x": 26,
+        "y": 13
+      }
+    }
+  ],
+  "sections": [
+    {
+      "name": "A",
+      "at": 26
+    }
+  ],
+  "fixtures": [
+    {
+      "type": "toilet",
+      "at": {
+        "x": 4.5,
+        "y": 49.3
+      }
+    },
+    {
+      "type": "lavatory",
+      "at": {
+        "x": 5.8,
+        "y": 44.9
+      },
+      "rotation": 180
+    },
+    {
+      "type": "bathtub",
+      "at": {
+        "x": 1.75,
+        "y": 47.5
+      },
+      "rotation": 90
+    },
+    {
+      "type": "toilet",
+      "at": {
+        "x": 27.9,
+        "y": 35.6
+      }
+    },
+    {
+      "type": "lavatory",
+      "at": {
+        "x": 30.7,
+        "y": 36.1
+      }
+    },
+    {
+      "type": "shower",
+      "at": {
+        "x": 30.3,
+        "y": 33.7
+      }
+    },
+    {
+      "type": "bathtub",
+      "at": {
+        "x": 35.5,
+        "y": 35.55
+      },
+      "rotation": 180
+    },
+    {
+      "type": "toilet",
+      "at": {
+        "x": 38.7,
+        "y": 33
+      },
+      "rotation": 270
+    },
+    {
+      "type": "lavatory",
+      "at": {
+        "x": 33.1,
+        "y": 33
+      }
+    },
+    {
+      "type": "counter",
+      "at": {
+        "x": 1.5,
+        "y": 28
+      },
+      "rotation": 90,
+      "size": {
+        "width": 14,
+        "depth": 2
+      }
+    },
+    {
+      "type": "kitchen-sink",
+      "at": {
+        "x": 1.5,
+        "y": 26.5
+      },
+      "rotation": 90
+    },
+    {
+      "type": "range",
+      "at": {
+        "x": 1.6,
+        "y": 30.5
+      },
+      "rotation": 90
+    },
+    {
+      "type": "refrigerator",
+      "at": {
+        "x": 1.8,
+        "y": 22.5
+      },
+      "rotation": 90
+    },
+    {
+      "type": "washer-dryer",
+      "at": {
+        "x": 7.5,
+        "y": 18.7
+      }
+    },
+    {
+      "type": "water-heater",
+      "at": {
+        "x": 1.3,
+        "y": 18.5
+      }
+    }
+  ]
+}
